@@ -1,0 +1,54 @@
+<?xml version="1.0" ?>
+
+<robot name="rocket">
+
+  <!-- https://en.wikipedia.org/wiki/Falcon_9_Full_Thrust#Rocket_specifications -->
+  <!-- This is as close as an approximation to the SpaceX Falcon 9 firststage + interstage, at a 1:10 scale -->
+  <!-- The original rocket has these metrics: -->
+    <!-- All up weight: 549_000 kg -->
+    <!-- Total RP1: 123_500 kg -->
+    <!-- Total LOX: 287_400 kg -->
+    <!-- Empty weight: 138_100 kg -->
+    <!-- Firststage height: 47.7 m -->
+    <!-- Interstage height: 6.5 m -->
+    <!-- Diameter: 3.7 m -->
+    <!-- Total thrust: 7_607_000 N -->
+    <!-- Throttle capability: 39% - 100% -->
+    <!-- Gimbal range: 5 degrees -->
+  <!-- Inertia for the baselink and fueltank is calculated assuming isometric density -->
+  <!-- In this simulation, all mass is scaled 1:1000 -->
+
+  <material name="black">
+    <color rgba="0.0 0.0 0.0 1.0"/>
+  </material>
+  <material name="grey">
+    <color rgba="0.2 0.2 0.2 1.0"/>
+  </material>
+  <material name="yellow">
+    <color rgba="1.0 0.8 0.0 1.0"/>
+  </material>
+  <material name="white">
+    <color rgba="1.0 1.0 1.0 1.0"/>
+  </material>
+
+  <link name="base_link">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="91.0"/>
+      <inertia ixx="372.6" ixy="0" ixz="0" iyy="372.6" iyz="0" izz="1.55"/>
+    </inertial>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.185" length="4.77"/>
+      </geometry>
+    </collision>
+    <visual>
+      <geometry>
+        <cylinder radius="0.185" length="4.77"/>
+      </geometry>
+      <material name="white"/>
+    </visual>
+  </link>
+
+</robot>
