@@ -46,7 +46,7 @@ def nmpc_thread_func(initial_state):
     ocp.cost.cost_type_e = 'LINEAR_LS'
 
     Q_mat = np.diag(model.weight_diag)  # state weight
-    R_mat = np.diag(np.ones(nu, )*1e-1)  # weight on control input u
+    R_mat = np.diag(np.ones(nu, )*10.0)  # weight on control input u
 
     ocp.cost.W = scipy.linalg.block_diag(Q_mat, R_mat)
     ocp.cost.W_e = Q_mat
@@ -69,7 +69,7 @@ def nmpc_thread_func(initial_state):
     ocp.constraints.constr_type = 'BGH' # Comprises simple bounds, polytopic constraints, general non-linear constraints.
 
     # control input constraints
-    ocp.constraints.lbu = np.array([ 0.00, -1.0, -1.0, -1.0, -1.0 ])
+    ocp.constraints.lbu = np.array([ 0.20, -1.0, -1.0, -1.0, -1.0 ])
     ocp.constraints.ubu = np.array([ 1.00,  1.0,  1.0,  1.0,  1.0 ])
     ocp.constraints.x0 = initial_state
     ocp.constraints.idxbu = np.array(range(nu))
