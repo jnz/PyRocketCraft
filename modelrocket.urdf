@@ -129,7 +129,7 @@
   <link name="leg_1">
     <inertial>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <mass value="0.00"/>
+      <mass value="0.01"/>
       <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
     </inertial>
     <collision>
@@ -145,16 +145,18 @@
       <material name="black"/>
     </visual>
   </link>
-  <joint name="leg_1_joint" type="fixed">
+  <joint name="leg_1_joint" type="revolute">
     <origin rpy="0 0 0" xyz="0.0 0.35 -2.4"/>
     <parent link="base_link"/>
     <child link="leg_1"/>
+    <axis xyz="1 0 0"/> <!-- axis of rotation -->
+    <limit lower="-1.6" upper="1.6" effort="1000.0" velocity="1.0" /> <!-- dummy values for effort and velocity" -->
   </joint>
 
   <link name="leg_2">
     <inertial>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <mass value="0.00"/>
+      <mass value="0.01"/>
       <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
     </inertial>
     <collision>
@@ -170,17 +172,19 @@
       <material name="black"/>
     </visual>
   </link>
-  <joint name="leg_2_joint" type="fixed">
+  <joint name="leg_2_joint" type="revolute">
     <origin rpy="0 0 4.188" xyz="0.3031 -0.175 -2.4"/>
     <parent link="base_link"/>
     <child link="leg_2"/>
+    <axis xyz="-0.175 -0.3031 0"/> <!-- axis of rotation -->
+    <limit lower="-1.6" upper="1.6" effort="1000.0" velocity="1.0" /> <!-- dummy values for effort and velocity" -->
   </joint>
 
 
   <link name="leg_3">
     <inertial>
      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <mass value="0.00"/>
+      <mass value="0.01"/>
       <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
     </inertial>
     <collision>
@@ -196,10 +200,12 @@
       <material name="black"/>
     </visual>
   </link>
-  <joint name="leg_3_joint" type="fixed">
+  <joint name="leg_3_joint" type="revolute">
     <origin rpy="0 0 -4.188" xyz="-0.3031 -0.175 -2.4"/>
     <parent link="base_link"/>
     <child link="leg_3"/>
+    <axis xyz="-0.175 0.3031 0"/> <!-- axis of rotation -->
+    <limit lower="-1.6" upper="1.6" effort="1000.0" velocity="1.0" /> <!-- dummy values for effort and velocity" -->
   </joint>
 
 </robot>

@@ -98,15 +98,19 @@ class SimRocketEnv(gym.Env):
             self.pybullet_body = p.loadURDF(self.urdf_file, initial_position_enu)
             self.pybullet_booster_index = -1
 
+            self.pybullet_leg_1_joint = -1
+            self.pybullet_leg_2_joint = -1
+            self.pybullet_leg_3_joint = -1
             # Index of booster
-            # for i in range(p.getNumJoints(self.pybullet_body)):
-            #     joint_name = p.getJointInfo(self.pybullet_body, i)[1].decode('UTF-8')
-            #     if joint_name == "booster_joint":
-            #         self.pybullet_booster_index = i
-            #     if joint_name == "fin_pos_x_joint":
-            #         self.fin_pos_x = i
-            #     # FIXME add other fins
-            #     print("Joint %i -> %s" % (i, joint_name))
+            for i in range(p.getNumJoints(self.pybullet_body)):
+                joint_name = p.getJointInfo(self.pybullet_body, i)[1].decode('UTF-8')
+                if joint_name == "leg_1_joint":
+                    self.pybullet_leg_1_joint = i
+                if joint_name == "leg_2_joint":
+                    self.pybullet_leg_2_joint = i
+                if joint_name == "leg_3_joint":
+                    self.pybullet_leg_3_joint = i
+                print("Joint %i -> %s" % (i, joint_name))
 
             q_rosbody_to_enu = self.q
             # pybullet needs the scalar part at the end of the quaternion
@@ -150,10 +154,32 @@ class SimRocketEnv(gym.Env):
         #                       flags=p.LINK_FRAME)
 
         # Example: set the fin position
-        # p.setJointMotorControl2(bodyUniqueId=self.pybullet_body,
-        #                         jointIndex=self.fin_pos_x,
-        #                         controlMode=p.POSITION_CONTROL,
-        #                         targetPosition=np.deg2rad(20.0))
+        if self.pos_n[2] < 10.0:
+            p.setJointMotorControl2(bodyUniqueId=self.pybullet_body,
+                                    jointIndex=self.pybullet_leg_1_joint,
+                                    controlMode=p.POSITION_CONTROL,
+                                    targetPosition=np.deg2rad(0.0))
+            p.setJointMotorControl2(bodyUniqueId=self.pybullet_body,
+                                    jointIndex=self.pybullet_leg_2_joint,
+                                    controlMode=p.POSITION_CONTROL,
+                                    targetPosition=np.deg2rad(0.0))
+            p.setJointMotorControl2(bodyUniqueId=self.pybullet_body,
+                                    jointIndex=self.pybullet_leg_3_joint,
+                                    controlMode=p.POSITION_CONTROL,
+                                    targetPosition=np.deg2rad(0.0))
+        else:
+            p.setJointMotorControl2(bodyUniqueId=self.pybullet_body,
+                                    jointIndex=self.pybullet_leg_1_joint,
+                                    controlMode=p.POSITION_CONTROL,
+                                    targetPosition=np.deg2rad(-90.0))
+            p.setJointMotorControl2(bodyUniqueId=self.pybullet_body,
+                                    jointIndex=self.pybullet_leg_2_joint,
+                                    controlMode=p.POSITION_CONTROL,
+                                    targetPosition=np.deg2rad(-90.0))
+            p.setJointMotorControl2(bodyUniqueId=self.pybullet_body,
+                                    jointIndex=self.pybullet_leg_3_joint,
+                                    controlMode=p.POSITION_CONTROL,
+                                    targetPosition=np.deg2rad(-90.0))
 
         pybullet_dt_sec = 0.0
         while self.pybullet_time_sec < self.time_sec:
