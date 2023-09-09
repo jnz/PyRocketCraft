@@ -1,6 +1,8 @@
 PyRocketCraft
 -------------
 
+![LOGO](img/pyrocketcraft.png)
+
 Run via:
 
     python3 rocketcraft.py
