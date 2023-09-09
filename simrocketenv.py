@@ -154,7 +154,7 @@ class SimRocketEnv(gym.Env):
         #                       flags=p.LINK_FRAME)
 
         # Example: set the fin position
-        if self.pos_n[2] < 10.0:
+        if self.pos_n[2] < 5.0:
             p.setJointMotorControl2(bodyUniqueId=self.pybullet_body,
                                     jointIndex=self.pybullet_leg_1_joint,
                                     controlMode=p.POSITION_CONTROL,
