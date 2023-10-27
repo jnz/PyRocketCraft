@@ -44,7 +44,7 @@ def nmpc_thread_func(initial_state):
     ocp.cost.cost_type = 'LINEAR_LS'
     ocp.cost.cost_type_e = 'LINEAR_LS'
     Q_mat = np.diag(model.weight_diag)  # state weight
-    R_mat = np.diag(np.ones(nu, )*10.0)  # weight on control input u
+    R_mat = np.diag(np.ones(nu, )*100.0)  # weight on control input u
     ocp.cost.W = scipy.linalg.block_diag(Q_mat, R_mat)
     ocp.cost.W_e = Q_mat
     ocp.cost.Vx = np.zeros((ny, nx))
@@ -56,7 +56,7 @@ def nmpc_thread_func(initial_state):
 
     setpoint_yref = np.zeros((ny, ))
     setpoint_yref[0] = 1.0  # set q0 (real) unit quaternion part to 1.0
-    setpoint_yref[9] = -2.5 # set new setpoint altitude component to -2.5 (north east down (!))
+    setpoint_yref[9] = 2.42 # set new setpoint altitude component
     ocp.cost.yref = setpoint_yref  # setpoint trajectory
     ocp.cost.yref_e = setpoint_yref[0:nx] # setpoint end
 

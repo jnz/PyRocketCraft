@@ -45,15 +45,15 @@ class SimRocketEnv(gym.Env):
         """
 
         # <state>
-        self.pos_n   = np.array([10.0, 10.0, 25.0]) # ENU
-        self.vel_n   = np.zeros(3)
+        self.pos_n   = np.array([20.0, 20.0, 50.0]) # ENU
+        self.vel_n   = np.array([0.0, 0.0, -10.0]) # ENU
 
         # Maintain the attitude as quaternion and Euler angles. The source of truth is
         # the quaternion (self.q) and roll_deg, pitch_deg and yaw_deg will be updated
         # based on the quaternion. But here for initialization the Euler angles are
         # used to initialize the orientation (Euler angles are a bit more readable)
         self.roll_deg  = 0.0 # Random initialization with e.g. np.random.uniform(-10, 10)
-        self.pitch_deg = 10.0
+        self.pitch_deg = 0.0
         self.yaw_deg   = 0.0
         # Careful: this quaternion is in the order: qw, qx,qy,qz (qw is the real part)
         self.q         = quat_from_rpy(np.deg2rad(self.roll_deg), np.deg2rad(self.pitch_deg), np.deg2rad(self.yaw_deg))
@@ -80,8 +80,8 @@ class SimRocketEnv(gym.Env):
         return self.state
 
     def pybullet_setup_environment(self):
-        # pybullet world frame is ENU EAST (X) NORTH (Y) UP (Z) <-> PyCopterCraft uses NED NORTH (X) EAST(Y) DOWN (Z)
-        # pybullet body frame is FORWARD (X) LEFT (Y) UP (Z)  <-> PyCopterCraft uses FORWARD (X) RIGHT (Y) DOWN (Z)
+        # pybullet world frame is ENU EAST (X) NORTH (Y) UP (Z)
+        # pybullet body frame is FORWARD (X) LEFT (Y) UP (Z)
 
         self.PYBULLET_DT_SEC = 1.0/240.0
         self.pybullet_time_sec = self.time_sec
@@ -156,6 +156,9 @@ class SimRocketEnv(gym.Env):
             self.thrust_beta      += (self.THRUST_MAX_ANGLE * u[2] - self.thrust_beta)  * self.PYBULLET_DT_SEC / self.THRUST_VECTOR_TAU
 
             thrust = np.array([self.thrust_alpha, self.thrust_beta, 1.0]) * self.thrust_current_N
+            if self.pos_n[2] < 2.45:
+                print("Engine off")
+                thrust *= 0.0
 
             # Add force of rocket boost to pybullet simulation
             p.applyExternalForce(objectUniqueId=self.pybullet_body,

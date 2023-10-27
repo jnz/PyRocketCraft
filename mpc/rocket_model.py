@@ -56,9 +56,9 @@ def export_rocket_ode_model() -> AcadosModel:
     omega_z_dot = SX.sym('omega_z_dot')
     omega_dot   = vertcat(omega_x_dot, omega_y_dot, omega_z_dot)
 
-    pos     = SX.sym('pos', 3, 1) # position in north/east/down (NED) in meter
+    pos     = SX.sym('pos', 3, 1) # position in meter
     pos_dot = SX.sym('pos_dot', 3, 1)
-    vel     = SX.sym('vel', 3, 1) # velocity in NED (m/s)
+    vel     = SX.sym('vel', 3, 1) # velocity in m/s
     vel_dot = SX.sym('vel_dot', 3, 1)
 
     thrust      = SX.sym('thrust')
@@ -74,20 +74,20 @@ def export_rocket_ode_model() -> AcadosModel:
 
     nx = x.size()[0]
     weight_diag = np.ones((nx,)) * 1e-6  # default weight
-    weight_diag[0] = 16.0
-    weight_diag[1] = 16.0
-    weight_diag[2] = 16.0
-    weight_diag[3] = 16.0
+    weight_diag[0] = 6.0
+    weight_diag[1] = 6.0
+    weight_diag[2] = 6.0
+    weight_diag[3] = 6.0
 
-    weight_diag[4] = 20.1
-    weight_diag[5] = 20.1
+    weight_diag[4] = 80.1
+    weight_diag[5] = 80.1
     weight_diag[6] = 0.5
 
-    weight_diag[7] = 1.0    # pos north
-    weight_diag[8] = 1.0    # pos east
+    weight_diag[7] = 1.0    # pos East
+    weight_diag[8] = 1.0    # pos North
     weight_diag[9] = 3.0    # altitude
-    weight_diag[10] = 5.1   # north velocity
-    weight_diag[11] = 5.1   # east velocity
+    weight_diag[10] = 5.1   # East velocity
+    weight_diag[11] = 5.1   # North velocity
     weight_diag[12] = 25.0  # vertical velocity
 
     # Control input u
