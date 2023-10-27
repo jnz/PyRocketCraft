@@ -22,17 +22,16 @@ g_thread_msgbox = {
 g_thread_msgbox_lock = threading.Lock() # only access g_thread_msgbox with this lock
 g_sim_running = True # Run application as long as this is set to True
 
-# This thread's job is to consume the state vector and emit a control output u
+# This thread's job is to consume the simulation state vector and emit a
+# control output u
 def nmpc_thread_func(initial_state):
     global g_thread_msgbox
     global g_thread_msgbox_lock
     global g_sim_running
 
     ocp = AcadosOcp() # create ocp object to formulate the OCP
-
     model = export_rocket_ode_model()
     ocp.model = model
-
     Tf = 3.0    # Time horizon in seconds
     nx = model.x.size()[0]  # state length
     nu = model.u.size()[0]  # control input u vector length
@@ -44,63 +43,35 @@ def nmpc_thread_func(initial_state):
     # set cost module
     ocp.cost.cost_type = 'LINEAR_LS'
     ocp.cost.cost_type_e = 'LINEAR_LS'
-
     Q_mat = np.diag(model.weight_diag)  # state weight
     R_mat = np.diag(np.ones(nu, )*10.0)  # weight on control input u
-
     ocp.cost.W = scipy.linalg.block_diag(Q_mat, R_mat)
     ocp.cost.W_e = Q_mat
-
     ocp.cost.Vx = np.zeros((ny, nx))
     ocp.cost.Vx[:nx, :nx] = np.eye(nx)
-
     Vu = np.zeros((ny, nu))
     Vu[nx : nx + nu, 0:nu] = np.eye(nu)
     ocp.cost.Vu = Vu
-
     ocp.cost.Vx_e = np.eye(nx)
 
     setpoint_yref = np.zeros((ny, ))
     setpoint_yref[0] = 1.0  # set q0 (real) unit quaternion part to 1.0
-    setpoint_yref[9] = -2.5 # set new altitude in NED (down)
+    setpoint_yref[9] = -2.5 # set new setpoint altitude component to -2.5 (north east down (!))
     ocp.cost.yref = setpoint_yref  # setpoint trajectory
     ocp.cost.yref_e = setpoint_yref[0:nx] # setpoint end
 
+    # Constraints
     ocp.constraints.constr_type = 'BGH' # Comprises simple bounds, polytopic constraints, general non-linear constraints.
-
-    # control input constraints
     ocp.constraints.lbu = np.array([ 0.20, -1.0, -1.0, -1.0, -1.0 ])
     ocp.constraints.ubu = np.array([ 1.00,  1.0,  1.0,  1.0,  1.0 ])
     ocp.constraints.x0 = initial_state
     ocp.constraints.idxbu = np.array(range(nu))
 
-    # # State soft-constraints
-    # nbx = 5 # 3 constraints on the rotation rate, 2 on quaternion
-    # Jbx = np.zeros((nbx, nx))
-    # Jbx[0:3, vehicle_config.state_cfg['omega_index']:vehicle_config.state_cfg['omega_index_end']] = np.eye(3)
-    # Jbx[3, vehicle_config.state_cfg['q_index']+1] = 1
-    # Jbx[4, vehicle_config.state_cfg['q_index']+2] = 1
-    # max_rotation_rate_rps = vehicle_config.max_rotation_rate_rps
-    # ocp.constraints.Jbx = Jbx
-    # ocp.constraints.lbx = np.zeros((nbx,0))
-    # ocp.constraints.ubx = np.zeros((nbx,0))
-    # ocp.constraints.lbx[0] = -max_rotation_rate_rps
-    # ocp.constraints.lbx[1] = -max_rotation_rate_rps
-    # ocp.constraints.lbx[2] = -max_rotation_rate_rps
-    # ocp.constraints.ubx[0] =  max_rotation_rate_rps
-    # ocp.constraints.ubx[1] =  max_rotation_rate_rps
-    # ocp.constraints.ubx[2] =  max_rotation_rate_rps
-    # ocp.constraints.lbx[3] = -0.3 # not the best way to limit the tilt angle, but linear
-    # ocp.constraints.ubx[3] =  0.3
-    # ocp.constraints.lbx[4] = -0.3
-    # ocp.constraints.ubx[4] =  0.3
-    # ocp.constraints.Jsbx = np.eye(nbx) # enable soft constraints
-
+    # Solver options
     ocp.solver_options.qp_solver = 'PARTIAL_CONDENSING_HPIPM'
     ocp.solver_options.hessian_approx = 'GAUSS_NEWTON'
     ocp.solver_options.integrator_type = 'ERK' # IRK, GNSF, ERK
     ocp.solver_options.nlp_solver_type = 'SQP_RTI'  # SQP or SQP_RTI
-
     ocp.solver_options.qp_solver_cond_N = N_horizon
     ocp.solver_options.tf = Tf
 

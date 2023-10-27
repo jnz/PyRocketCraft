@@ -148,48 +148,16 @@ class SimRocketEnv(gym.Env):
 
         self.set_camera_follow_object(self.pybullet_body)
 
-        # p.applyExternalTorque(objectUniqueId=self.pybullet_body,
-        #                       linkIndex=-1,
-        #                       torqueObj=[0, 0, sum_torque], # [x forward, y left, z up]
-        #                       flags=p.LINK_FRAME)
-
-        # Example: set the fin position
-        if self.pos_n[2] < 5.0:
-            p.setJointMotorControl2(bodyUniqueId=self.pybullet_body,
-                                    jointIndex=self.pybullet_leg_1_joint,
-                                    controlMode=p.POSITION_CONTROL,
-                                    targetPosition=np.deg2rad(0.0))
-            p.setJointMotorControl2(bodyUniqueId=self.pybullet_body,
-                                    jointIndex=self.pybullet_leg_2_joint,
-                                    controlMode=p.POSITION_CONTROL,
-                                    targetPosition=np.deg2rad(0.0))
-            p.setJointMotorControl2(bodyUniqueId=self.pybullet_body,
-                                    jointIndex=self.pybullet_leg_3_joint,
-                                    controlMode=p.POSITION_CONTROL,
-                                    targetPosition=np.deg2rad(0.0))
-        else:
-            p.setJointMotorControl2(bodyUniqueId=self.pybullet_body,
-                                    jointIndex=self.pybullet_leg_1_joint,
-                                    controlMode=p.POSITION_CONTROL,
-                                    targetPosition=np.deg2rad(-90.0))
-            p.setJointMotorControl2(bodyUniqueId=self.pybullet_body,
-                                    jointIndex=self.pybullet_leg_2_joint,
-                                    controlMode=p.POSITION_CONTROL,
-                                    targetPosition=np.deg2rad(-90.0))
-            p.setJointMotorControl2(bodyUniqueId=self.pybullet_body,
-                                    jointIndex=self.pybullet_leg_3_joint,
-                                    controlMode=p.POSITION_CONTROL,
-                                    targetPosition=np.deg2rad(-90.0))
-
         pybullet_dt_sec = 0.0
         while self.pybullet_time_sec < self.time_sec:
-            # thrust dynamics
+            # simulate thrust dynamics (i.e. the thrust takes some time to react)
             self.thrust_current_N += (self.THRUST_MAX_N     * u[0] - self.thrust_current_N) * self.PYBULLET_DT_SEC / self.THRUST_TAU
             self.thrust_alpha     += (self.THRUST_MAX_ANGLE * u[1] - self.thrust_alpha) * self.PYBULLET_DT_SEC / self.THRUST_VECTOR_TAU
             self.thrust_beta      += (self.THRUST_MAX_ANGLE * u[2] - self.thrust_beta)  * self.PYBULLET_DT_SEC / self.THRUST_VECTOR_TAU
 
             thrust = np.array([self.thrust_alpha, self.thrust_beta, 1.0]) * self.thrust_current_N
 
+            # Add force of rocket boost to pybullet simulation
             p.applyExternalForce(objectUniqueId=self.pybullet_body,
                                  linkIndex=self.pybullet_booster_index,
                                  forceObj=[thrust[0], thrust[1], thrust[2]], # [x forward, y left, z up]
@@ -367,3 +335,4 @@ def joint_position_relative_to_cog(body_id, joint_id):
         joint_pos = link_state[0]
 
     return np.array(joint_pos) - cog
+
