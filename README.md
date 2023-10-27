@@ -7,6 +7,7 @@ Run via:
 
     python3 rocketcraft.py
 
+![MOVIE](img/rocketlanding.gif)
 
 Installation on Linux and macOS
 -------------------------------
