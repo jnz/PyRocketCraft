@@ -52,11 +52,6 @@ macOS note: on macOS it is `DYLD_LIBRARY_PATH` instead of `LD_LIBRARY_PATH`
 Coordinate Frames
 -----------------
 
-PyCopterCraft is using:
-
- - World Frame (n) North/East/Down(NED): X = North, Y = East, Z = Down
- - Body Frame (b), X = Forward, Y = Right, Z = Down
-
 pybullet is using:
 
  - World Frame (enu) East/North/Up(ENU): X = East, Y = North, Z = Up
