@@ -124,8 +124,6 @@ class SimRocketEnv(gym.Env):
             self.pybullet_initialized = True
             print(f'\033[33mpybullet physics active.\033[0m')
             print("Mass: %.1f kg" % self.mass_kg)
-            # booster_pos = joint_position_relative_to_cog(self.pybullet_body, self.pybullet_booster_index)
-            # print("Booster pos relative to CoG: %.1f (X=Forward) %.1f (Y=Left) %.1f (Z=Up)" % (booster_pos[0],booster_pos[1],booster_pos[2]) )
 
         except Exception as e:
             print(f"Failed to load pybullet: {e}")
@@ -135,7 +133,7 @@ class SimRocketEnv(gym.Env):
             p.resetSimulation()
         self.pybullet_setup_environment()
 
-    def set_camera_follow_object(self, objectId, distance=5, pitch=-45, yaw=50):
+    def set_camera_follow_object(self, objectId, distance=4.5, pitch=-55, yaw=50):
         pos, orn = p.getBasePositionAndOrientation(objectId)
         p.resetDebugVisualizerCamera(
             cameraDistance=distance,
@@ -147,6 +145,7 @@ class SimRocketEnv(gym.Env):
     def pybullet_physics(self, u):
 
         self.set_camera_follow_object(self.pybullet_body)
+        NOZZLE_OFFSET = 2.0 # OFFSET between CoG and nozzle. Dirty hack: should not of course not be hardcoded here
 
         pybullet_dt_sec = 0.0
         while self.pybullet_time_sec < self.time_sec:
@@ -164,7 +163,7 @@ class SimRocketEnv(gym.Env):
             p.applyExternalForce(objectUniqueId=self.pybullet_body,
                                  linkIndex=self.pybullet_booster_index,
                                  forceObj=[thrust[0], thrust[1], thrust[2]], # [x forward, y left, z up]
-                                 posObj=[0, 0, -2.0],
+                                 posObj=[0, 0, -NOZZLE_OFFSET],
                                  flags=p.LINK_FRAME)
 
             att_x_thrust = u[3] * self.ATT_MAX_THRUST
@@ -172,23 +171,29 @@ class SimRocketEnv(gym.Env):
             p.applyExternalForce(objectUniqueId=self.pybullet_body,
                                  linkIndex=self.pybullet_booster_index,
                                  forceObj=[att_x_thrust, att_y_thrust, 0.0], # [x forward, y left, z up]
-                                 posObj=[0, 0, 2.0],
+                                 posObj=[0, 0, 2.0], # offset from CoM to top
                                  flags=p.LINK_FRAME)
 
             p.stepSimulation()
             self.pybullet_time_sec += self.PYBULLET_DT_SEC
             pybullet_dt_sec += self.PYBULLET_DT_SEC
 
-        thrust_vec_line = -np.array([self.thrust_alpha, self.thrust_beta, 1.0]) * 3.0 * self.thrust_current_N / self.THRUST_MAX_N
+        thrust_vec_line = -np.array([self.thrust_alpha, self.thrust_beta, 1.0]) * 6.0 * self.thrust_current_N / self.THRUST_MAX_N
+        thrust_start_point = [0,0,-NOZZLE_OFFSET]
+        thrust_end_point = [thrust_vec_line[0],thrust_vec_line[1],thrust_vec_line[2]-2.0]
+        thrust_color = [1.0, 0, 0]
+        thrust_line_width = 6.0
+
         if self.debug_line_thrust == -1:
-            self.debug_line_thrust = p.addUserDebugLine([0,0,-2.0], [thrust_vec_line[0],thrust_vec_line[1],thrust_vec_line[2]-2.0], [1.0,0.0,0.0],
+            self.debug_line_thrust = p.addUserDebugLine(thrust_start_point, thrust_end_point, lineColorRGB=thrust_color,
                                                         parentObjectUniqueId=self.pybullet_body,
-                                                        parentLinkIndex=self.pybullet_booster_index)
+                                                        parentLinkIndex=self.pybullet_booster_index, lineWidth=thrust_line_width)
         else:
-            self.debug_line_thrust = p.addUserDebugLine([0,0,-2.0], [thrust_vec_line[0],thrust_vec_line[1],thrust_vec_line[2]-2.0], [1.0,0.0,0.0],
+            self.debug_line_thrust = p.addUserDebugLine(thrust_start_point, thrust_end_point, lineColorRGB=thrust_color,
                                                         parentObjectUniqueId=self.pybullet_body,
                                                         parentLinkIndex=self.pybullet_booster_index,
-                                                        replaceItemUniqueId=self.debug_line_thrust)
+                                                        replaceItemUniqueId=self.debug_line_thrust, lineWidth=thrust_line_width)
+
 
         # <EXTRACT CURRENT STATE FROM PYBULLET>
         position, orientation = p.getBasePositionAndOrientation(self.pybullet_body)
@@ -303,39 +308,4 @@ def get_total_mass(body_id):
         total_mass += p.getDynamicsInfo(body_id, i)[0]
 
     return total_mass
-
-
-def compute_center_of_gravity(body_id):
-    total_mass = 0
-    weighted_position_sum = np.zeros(3)
-
-    # For the base
-    base_pos, base_orient = p.getBasePositionAndOrientation(body_id)
-    dynamics = p.getDynamicsInfo(body_id, -1)
-    mass = dynamics[0]
-    total_mass += mass
-    weighted_position_sum += mass * np.array(base_pos)
-
-    # For each link
-    for link_id in range(p.getNumJoints(body_id)):
-        link_state = p.getLinkState(body_id, link_id)
-        link_pos = link_state[0]
-        dynamics = p.getDynamicsInfo(body_id, link_id)
-        mass = dynamics[0]
-        total_mass += mass
-        weighted_position_sum += mass * np.array(link_pos)
-
-    center_of_gravity = weighted_position_sum / total_mass
-    return center_of_gravity
-
-def joint_position_relative_to_cog(body_id, joint_id):
-    cog = compute_center_of_gravity(body_id)
-
-    if joint_id == -1:  # base
-        joint_pos, _ = p.getBasePositionAndOrientation(body_id)
-    else:
-        link_state = p.getLinkState(body_id, joint_id)
-        joint_pos = link_state[0]
-
-    return np.array(joint_pos) - cog
 
