@@ -278,7 +278,7 @@ class SimRocketEnv(gym.Env):
         except Exception as e:
             done = True
 
-        reward = 0 # FIXME: reward
+        reward = 0 # FIXME: reward for e.g. PPO
 
         self.time_sec = self.time_sec + self.dt_sec
         self.update_state()

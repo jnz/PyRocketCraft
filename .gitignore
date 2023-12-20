@@ -1,11 +1,5 @@
 c_generated_code
 __pycache__
-venv_pycoptercraft
+venv_pyrocketcraft
 img/tmp
 *.json
-latex/template
-latex/nmpc_ieee.aux
-latex/nmpc_ieee.log
-latex/nmpc_ieee.synctex.gz
-tools/modified_c_generated_code/modification_makefile
-tools/modified_c_generated_code/modification_makefile.patch

@@ -49,6 +49,50 @@ macOS note: on macOS it is `DYLD_LIBRARY_PATH` instead of `LD_LIBRARY_PATH`
 
     export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:"$(pwd)/../acados/lib"
 
+Program structure
+-----------------
+
+    .
+    ├── env.sh                    Setting up a virtual environment (recommended)
+    ├── geodetic_toolbox.py       Helper functions
+    ├── modelrocket.urdf          Pybullet visualization and physics definition of the rocket
+    ├── mpc
+    │   └── rocket_model.py       NMPC model definition
+    ├── rocketcraft.py            main entry point of application
+    └── simrocketenv.py           Physics simulation with gym interface, using pybullet for the heavy lifting
+
+Block diagram:
+--------------
+
+The main function in rocketcraft.py runs the NMPC code decoupled from the
+physics simulation in a thread. The simulation part is in the simrocketenv
+file that is using the OpenAI gym interface.
+
+    ┌────────────────────┐
+    │  rocketcraft.py    │
+    │  --------------    │
+    │                    │
+    │  main()            │
+    │                    │
+    │                    │   'step'  ┌────────────────────┐
+    │                    ├◄─────────►│  simrocketenv.py   │
+    └───────┬────────────┘           │  ---------------   │
+            │           ▲            │                    │
+    'keymap'│           │            │  OpenAI gym interf.│
+    'state' │           │ 'u'        │                    │
+            │           │            └────────────────────┘
+            ▼           │
+    ┌─────────────────────┐
+    │                     │
+    │ NMPC Thread         │
+    │ nmpc_thread_func()  │          ┌────────────────────┐            ┌────────────────────┐
+    │                     │◄────────►│  rocketmodel.py    │◄─────────► │  acados            │
+    │                     │          │  --------------    │            │  ------            │
+    └─────────────────────┘          │                    │            │                    │
+                                     │  NMPC model        │            │  Auto generated    │
+                                     │                    │            │  C-code            │
+                                     └────────────────────┘            └────────────────────┘
+
 Coordinate Frames
 -----------------
 

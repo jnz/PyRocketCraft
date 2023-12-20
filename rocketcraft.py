@@ -15,15 +15,12 @@ g_thread_msgbox = {
     'keymap' : { 'longitudinal_cmd': 0.0, 'lateral_cmd': 0.0, 'yaw_cmd': 0.0, 'vertical_cmd': 0.0, 'yaw_cmd': 0.0, }, # keyboard input
     'mpc_fps' : 0,                     # debug information: fps of NMPC thread
     'render_fps' : 0,                  # debug information: fps of render thread
-    # state                            # current state vector from simulation thread
-    # u                                # control input from NMPC to simulation thread
-    # predictedX                       # predicted state over the MPC horizon
 }
 g_thread_msgbox_lock = threading.Lock() # only access g_thread_msgbox with this lock
 g_sim_running = True # Run application as long as this is set to True
 
 # This thread's job is to consume the simulation state vector and emit a
-# control output u
+# control output u (that is again consumed by the physics simulation)
 def nmpc_thread_func(initial_state):
     global g_thread_msgbox
     global g_thread_msgbox_lock
@@ -108,20 +105,20 @@ def nmpc_thread_func(initial_state):
         timestamp_last_mpc_update = timestamp_current
         mpc_step_counter += 1
         with g_thread_msgbox_lock:
-            g_thread_msgbox['u'] = np.copy(u)
+            g_thread_msgbox['u'] = np.copy(u) # output control vector u
 
 def main():
     global g_thread_msgbox
     global g_thread_msgbox_lock
     global g_sim_running
 
-    # Create the simulation environment
+    # SimRocketEnv is handling the physics simulation
     env = SimRocketEnv()
     g_thread_msgbox['state'] = env.state
     u = None
     predictedX = None
 
-    # Spawn NMPC thread
+    # Spawn NMPC thread (doing the control work)
     nmpc_thread = threading.Thread(target=nmpc_thread_func, kwargs={'initial_state': g_thread_msgbox['state']})
     nmpc_thread.start()
 
@@ -141,7 +138,7 @@ def main():
 
         with g_thread_msgbox_lock:
             if 'u' in g_thread_msgbox:
-                u = copy.deepcopy(g_thread_msgbox['u'])
+                u = copy.deepcopy(g_thread_msgbox['u']) # get control vector u from NMPC thread
             else:
                 continue
         # wait with the simulation thread until we receive the first u vector
@@ -155,7 +152,7 @@ def main():
         dt_sec = np.clip(dt_sec, 0.0, MAX_DT_SEC)
 
         env.dt_sec = dt_sec
-        state, reward, done, _ = env.step(u)
+        state, reward, done, _ = env.step(u) # update physics simulation
         sim_step_counter += 1
 
         if done == True:
