@@ -6,63 +6,31 @@ environment (using the pybullet engine).
 
 ![LOGO](img/pyrocketcraft.png)
 
-Run via:
+Run the program with 
 
-    python3 rocketcraft.py
+```sh
+(source env.sh; ./src/rocketcraft.py)
+```
 
 ![MOVIE](img/rocketlanding.gif)
 
 Installation on Linux and macOS
 -------------------------------
 
-Install acados (see section below) next to the PyRocketCraft folder.
-
-Create virtual environment:
-
-    python3 -m venv venv_pyrocketcraft
-    source venv_pyrocketcraft/bin/activate
-
-Install Python packages:
-
-    pip3 install numpy scipy gym pybullet
-
-For MPC (acados)
-----------------
-
-Install acados [(installation instructions)](https://docs.acados.org/installation/),
-ideally in a folder next to this repository.
-
-Link: [https://github.com/acados/acados](https://github.com/acados/acados)
-
-Install the acados module (use the virtual Python `venv_pycoptercraft` environment for
-this as well):
-
-    pip3 install -e <acados_root>/interfaces/acados_template
-
-Make sure these environment variables are set:
-
-    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:"<acados_root>/lib"
-    export ACADOS_SOURCE_DIR="<acados_root>"
-
-You can use `env.sh` to setup the virtual environment and the acados variables:
-
-    source env.sh
-
-macOS note: on macOS it is `DYLD_LIBRARY_PATH` instead of `LD_LIBRARY_PATH`
-
-    export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:"$(pwd)/../acados/lib"
+Run `./setup`
 
 Program structure
 -----------------
 
     .
-    ├── env.sh                    Setting up a virtual environment (recommended)
-    ├── geodetic_toolbox.py       Helper functions
-    ├── modelrocket.urdf          Pybullet visualization and physics definition of the rocket
-    ├── mpc
+    ├── env.sh                    Setting up the env if coming back
+    ├── setup                     Setting up the project for first use
+    ├── src/geodetic_toolbox.py   Helper functions
+    ├── src/modelrocket.urdf      Pybullet visualization and physics definition of the rocket
+    ├── src/mpc
     │   └── rocket_model.py       NMPC model definition
-    ├── rocketcraft.py            main entry point of application
-    └── simrocketenv.py           Physics simulation with gym interface, using pybullet for the heavy lifting
+    ├── src/rocketcraft.py        main entry point of application
+    └── src/simrocketenv.py       Physics simulation with gym interface, using pybullet for the heavy lifting
 
 Block diagram:
 --------------
