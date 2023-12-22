@@ -1,0 +1,28 @@
+#!/bin/bash
+set -e
+
+ACADOS_VERSION=v0.2.6
+
+# get acados and submodules
+git submodule update --recursive --init
+
+echo "building acado..."
+cd acados
+git checkout $ACADOS_VERSION
+cmake -DACADOS_WITH_QPOASES=ON
+make install -j4
+cd ..
+
+echo "setting up python project"
+python3 -m venv venv_pyrocketcraft
+source venv_pyrocketcraft/bin/activate
+pip3 install .
+pip3 install -e acados/interfaces/acados_template
+
+echo "Setup done
+
+Run 
+
+> (source env.sh; ./src/rocketcraft.py)
+
+to start"
