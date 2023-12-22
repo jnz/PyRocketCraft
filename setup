@@ -9,7 +9,7 @@ git submodule update --recursive --init
 echo "building acado..."
 cd acados
 git checkout $ACADOS_VERSION
-cmake -DACADOS_WITH_QPOASES=ON
+cmake -DACADOS_WITH_QPOASES=OFF
 make install -j4
 cd ..
 
