@@ -2,7 +2,7 @@ PyRocketCraft
 -------------
 
 Control a rocket via non-linear model predictive control (NMPC) in a 3D physics
-environment (using the pybullet engine).
+environment (using the pybullet engine and the acados MPC library).
 
 ![LOGO](img/pyrocketcraft.png)
 
