@@ -15,7 +15,7 @@ class SimRocketEnv(gym.Env):
 
         self.reset_count = 0 # keep track of calls to reset() function
         self.time_sec = 0.0 # keep track of simulation time
-        self.dt_sec = 1.0 / 240.0 # update rate of the simulation
+        self.dt_sec = 1.0 / 60.0 # update rate of the simulation
         self.urdf_file = "./src/modelrocket.urdf"
         self.UMIN = -1.0
         self.UMAX =  1.0
@@ -75,6 +75,7 @@ class SimRocketEnv(gym.Env):
         # <simulation>
         self.time_sec = 0.0
         self.reset_count += 1
+        self.epochs = 0
         # </simulation>
 
         self.pybullet_reset_environment()
@@ -89,6 +90,7 @@ class SimRocketEnv(gym.Env):
         self.pybullet_time_sec = self.time_sec
         try:
             if self.interactive:
+                print("GUI mode")
                 p.connect(p.GUI)
             else:
                 p.connect(p.DIRECT)
@@ -287,6 +289,7 @@ class SimRocketEnv(gym.Env):
         try:
             self.pybullet_physics(action)
         except Exception as e:
+            print("pybullet exception! ", e)
             done = True
 
         reward = self.calculate_reward()
@@ -294,6 +297,7 @@ class SimRocketEnv(gym.Env):
             done = True
 
         self.time_sec = self.time_sec + self.dt_sec
+        self.epochs += 1
         self.update_state()
         return self.state, reward, done, {}
 
@@ -304,13 +308,14 @@ class SimRocketEnv(gym.Env):
                 self.vel_n[0], self.vel_n[1], self.vel_n[2],
                 self.roll_deg, self.pitch_deg, self.yaw_deg,
                 np.rad2deg(self.omega[0]), np.rad2deg(self.omega[1]), np.rad2deg(self.omega[2]), self.thrust_current_N, np.rad2deg(self.thrust_alpha), np.rad2deg(self.thrust_beta)), end=" ")
+        print("")
 
     def render(self):
         """
         Gym interface. Render current simulation status.
         """
         if self.interactive:
-            print_state(self.state)
+            self.print_state()
 
     def calculate_reward(self):
             # Constants for reward calculation - these may need tuning
