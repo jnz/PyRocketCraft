@@ -8,9 +8,10 @@ import pybullet as p
 import pybullet_data
 
 class SimRocketEnv(gym.Env):
-    def __init__(self):
+    def __init__(self, interactive=False):
         # vehicle config describes the vehicle specific properties:
         self.pybullet_initialized = False
+        self.interactive = interactive
 
         self.reset_count = 0 # keep track of calls to reset() function
         self.time_sec = 0.0 # keep track of simulation time
@@ -44,6 +45,7 @@ class SimRocketEnv(gym.Env):
         :return state (state vector)
         """
 
+        self.engine_on = True
         # <state>
         self.pos_n   = np.array([20.0, 20.0, 50.0]) # ENU
         self.vel_n   = np.array([0.0, 0.0, -10.0]) # ENU
@@ -86,8 +88,10 @@ class SimRocketEnv(gym.Env):
         self.PYBULLET_DT_SEC = 1.0/240.0
         self.pybullet_time_sec = self.time_sec
         try:
-            p.connect(p.GUI)
-            # p.connect(p.DIRECT)
+            if self.interactive:
+                p.connect(p.GUI)
+            else:
+                p.connect(p.DIRECT)
             p.setAdditionalSearchPath(pybullet_data.getDataPath())
             p.setGravity( 0.0, 0.0, -self.GRAVITY)
             p.setTimeStep(self.PYBULLET_DT_SEC)
@@ -110,7 +114,8 @@ class SimRocketEnv(gym.Env):
                     self.pybullet_leg_2_joint = i
                 if joint_name == "leg_3_joint":
                     self.pybullet_leg_3_joint = i
-                print("Joint %i -> %s" % (i, joint_name))
+                if self.interactive:
+                    print("Joint %i -> %s" % (i, joint_name))
 
             q_rosbody_to_enu = self.q
             # pybullet needs the scalar part at the end of the quaternion
@@ -122,8 +127,9 @@ class SimRocketEnv(gym.Env):
             self.debug_line_thrust = -1
 
             self.pybullet_initialized = True
-            print(f'\033[33mpybullet physics active.\033[0m')
-            print("Mass: %.1f kg" % self.mass_kg)
+            if self.interactive:
+                print(f'\033[33mpybullet physics active.\033[0m')
+                print("Mass: %.1f kg" % self.mass_kg)
 
         except Exception as e:
             print(f"Failed to load pybullet: {e}")
@@ -156,7 +162,12 @@ class SimRocketEnv(gym.Env):
 
             thrust = np.array([self.thrust_alpha, self.thrust_beta, 1.0]) * self.thrust_current_N
             if self.pos_n[2] < 2.45:
-                print("Engine off")
+                if self.engine_on == True:
+                    self.engine_on = False
+                    if self.interactive:
+                        print("Engine off")
+
+            if self.engine_on == False:
                 thrust *= 0.0
 
             # Add force of rocket boost to pybullet simulation
@@ -278,7 +289,9 @@ class SimRocketEnv(gym.Env):
         except Exception as e:
             done = True
 
-        reward = 0 # FIXME: reward for e.g. PPO
+        reward = self.calculate_reward()
+        if self.engine_on == False:
+            done = True
 
         self.time_sec = self.time_sec + self.dt_sec
         self.update_state()
@@ -296,7 +309,42 @@ class SimRocketEnv(gym.Env):
         """
         Gym interface. Render current simulation status.
         """
-        print_state(self.state)
+        if self.interactive:
+            print_state(self.state)
+
+    def calculate_reward(self):
+            # Constants for reward calculation - these may need tuning
+            POSITION_WEIGHT = 1.0
+            VELOCITY_WEIGHT = 1.0
+            ORIENTATION_WEIGHT = 1.0
+            MAX_POS_REWARD = 100  # Maximum reward for position
+            MAX_VEL_REWARD = 100  # Maximum reward for velocity
+            MAX_ORI_REWARD = 2    # Maximum reward for orientation (cos(0) + cos(0))
+
+            # Calculate the negative distance from the target position (0,0,0)
+            target_pos = np.array([0, 0, 0])
+            distance = np.linalg.norm(self.pos_n - target_pos)
+            distance_reward = MAX_POS_REWARD - POSITION_WEIGHT * distance
+
+            # Calculate the negative velocity magnitude
+            velocity_magnitude = np.linalg.norm(self.vel_n)
+            velocity_reward = MAX_VEL_REWARD - VELOCITY_WEIGHT * velocity_magnitude
+
+            # Calculate orientation reward
+            # Converting degrees to radians for cosine calculation
+            roll_rad = np.radians(self.roll_deg)
+            pitch_rad = np.radians(self.pitch_deg)
+            orientation_reward = ORIENTATION_WEIGHT * (np.cos(roll_rad) + np.cos(pitch_rad))
+
+            # Normalize rewards
+            normalized_distance_reward = distance_reward / MAX_POS_REWARD
+            normalized_velocity_reward = velocity_reward / MAX_VEL_REWARD
+            normalized_orientation_reward = orientation_reward / MAX_ORI_REWARD
+
+            # Total reward
+            total_reward = normalized_distance_reward + normalized_velocity_reward + normalized_orientation_reward
+
+            return total_reward
 
 def get_total_mass(body_id):
     # Start with the mass of the base link

@@ -115,7 +115,7 @@ def main():
     global g_sim_running
 
     # SimRocketEnv is handling the physics simulation
-    env = SimRocketEnv()
+    env = SimRocketEnv(interactive=True)
     g_thread_msgbox['state'] = env.state
     u = None
     predictedX = None
@@ -130,6 +130,7 @@ def main():
     sim_step_counter = 0  # +1 for every simulation step, reset every 1 sec
     # emit a FPS stat message every second based on this timestamp:
     last_fps_update = timestamp_lastupdate
+    reward_sum = 0.0
 
     while g_sim_running:
         timestamp_current = time.time()
@@ -156,6 +157,7 @@ def main():
         env.dt_sec = dt_sec
         state, reward, done, _ = env.step(u) # update physics simulation
         sim_step_counter += 1
+        reward_sum += reward
 
         if done == True:
             g_sim_running = False
@@ -166,7 +168,7 @@ def main():
             render_fps    = g_thread_msgbox['render_fps']
 
         if timestamp_current - last_fps_update >= 0.1:
-            print("FPS=%3i SIM=%4i MPC=%3i" % (render_fps, sim_step_counter, mpc_fps), end=' ')
+            print("FPS=%3i SIM=%4i MPC=%3i score=%i" % (render_fps, sim_step_counter, mpc_fps, reward_sum), end=' ')
             last_fps_update = timestamp_current
 
             sim_step_counter = 0
