@@ -29,6 +29,7 @@ class SimRocketEnv(gym.Env):
         self.GRAVITY = 9.81
         self.mass_kg = -99999999.9 # will be loaded from URDF
 
+        self.pybullet_setup_environment()
         # initialize state of the vehicle
         # <state>
         state = self.reset() # reset will add and reset additional basic state variables
@@ -38,6 +39,21 @@ class SimRocketEnv(gym.Env):
         self.action_space = spaces.Box(low=self.UMIN, high=self.UMAX, shape=(self.ACTUATORCOUNT,))
         obs_hi = np.ones(state.shape[0]) * 1000.0
         self.observation_space = spaces.Box(low=-obs_hi, high=obs_hi, dtype=np.float32)
+
+    def pybullet_setup_environment(self):
+        # pybullet world frame is ENU EAST (X) NORTH (Y) UP (Z)
+        # pybullet body frame is FORWARD (X) LEFT (Y) UP (Z)
+        assert(self.pybullet_initialized == False)
+
+        self.PYBULLET_DT_SEC = 1.0/240.0
+
+        if self.interactive:
+            print("GUI mode")
+            self.CLIENT = p.connect(p.GUI)
+        else:
+            self.CLIENT = p.connect(p.DIRECT)
+
+        self.pybullet_initialized == True
 
     def reset(self):
         """
@@ -82,72 +98,55 @@ class SimRocketEnv(gym.Env):
 
         return self.state
 
-    def pybullet_setup_environment(self):
-        # pybullet world frame is ENU EAST (X) NORTH (Y) UP (Z)
-        # pybullet body frame is FORWARD (X) LEFT (Y) UP (Z)
-
-        self.PYBULLET_DT_SEC = 1.0/240.0
-        self.pybullet_time_sec = self.time_sec
-        try:
-            if self.interactive:
-                print("GUI mode")
-                p.connect(p.GUI)
-            else:
-                p.connect(p.DIRECT)
-            p.setAdditionalSearchPath(pybullet_data.getDataPath())
-            p.setGravity( 0.0, 0.0, -self.GRAVITY)
-            p.setTimeStep(self.PYBULLET_DT_SEC)
-            plane = p.loadURDF("plane.urdf")
-            p.changeDynamics(plane, -1, lateralFriction=1, restitution=0.5)
-
-            initial_position_enu = [self.pos_n[0], self.pos_n[1], self.pos_n[2]]
-            self.pybullet_body = p.loadURDF(self.urdf_file, initial_position_enu)
-            self.pybullet_booster_index = -1
-
-            self.pybullet_leg_1_joint = -1
-            self.pybullet_leg_2_joint = -1
-            self.pybullet_leg_3_joint = -1
-            # Index of booster
-            for i in range(p.getNumJoints(self.pybullet_body)):
-                joint_name = p.getJointInfo(self.pybullet_body, i)[1].decode('UTF-8')
-                if joint_name == "leg_1_joint":
-                    self.pybullet_leg_1_joint = i
-                if joint_name == "leg_2_joint":
-                    self.pybullet_leg_2_joint = i
-                if joint_name == "leg_3_joint":
-                    self.pybullet_leg_3_joint = i
-                if self.interactive:
-                    print("Joint %i -> %s" % (i, joint_name))
-
-            q_rosbody_to_enu = self.q
-            # pybullet needs the scalar part at the end of the quaternion
-            qxyzw_rosbody_to_enu = [ q_rosbody_to_enu[1], q_rosbody_to_enu[2], q_rosbody_to_enu[3], q_rosbody_to_enu[0] ]
-            p.resetBasePositionAndOrientation(self.pybullet_body, initial_position_enu, qxyzw_rosbody_to_enu)
-            self.mass_kg = get_total_mass(self.pybullet_body)
-
-            #debug lines
-            self.debug_line_thrust = -1
-
-            self.pybullet_initialized = True
-            if self.interactive:
-                print(f'\033[33mpybullet physics active.\033[0m')
-                print("Mass: %.1f kg" % self.mass_kg)
-
-        except Exception as e:
-            print(f"Failed to load pybullet: {e}")
-
     def pybullet_reset_environment(self):
-        if self.pybullet_initialized == True:
-            p.resetSimulation()
-        self.pybullet_setup_environment()
+        self.pybullet_time_sec = self.time_sec
+        p.resetSimulation(physicsClientId=self.CLIENT) # remove all objects and reset
+
+        p.setAdditionalSearchPath(pybullet_data.getDataPath(), physicsClientId=self.CLIENT)
+
+        p.setGravity( 0.0, 0.0, -self.GRAVITY, physicsClientId=self.CLIENT)
+        p.setTimeStep(self.PYBULLET_DT_SEC, physicsClientId=self.CLIENT)
+        plane = p.loadURDF("plane.urdf", physicsClientId=self.CLIENT)
+        p.changeDynamics(plane, -1, lateralFriction=1, restitution=0.5, physicsClientId=self.CLIENT)
+
+        initial_position_enu = [self.pos_n[0], self.pos_n[1], self.pos_n[2]]
+        self.pybullet_body = p.loadURDF(self.urdf_file, initial_position_enu, physicsClientId=self.CLIENT)
+        self.pybullet_booster_index = -1
+
+        self.pybullet_leg_1_joint = -1
+        self.pybullet_leg_2_joint = -1
+        self.pybullet_leg_3_joint = -1
+        # Index of booster
+        for i in range(p.getNumJoints(self.pybullet_body, physicsClientId=self.CLIENT)):
+            joint_name = p.getJointInfo(self.pybullet_body, i, physicsClientId=self.CLIENT)[1].decode('UTF-8')
+            if joint_name == "leg_1_joint":
+                self.pybullet_leg_1_joint = i
+            if joint_name == "leg_2_joint":
+                self.pybullet_leg_2_joint = i
+            if joint_name == "leg_3_joint":
+                self.pybullet_leg_3_joint = i
+
+        q_rosbody_to_enu = self.q
+        # pybullet needs the scalar part at the end of the quaternion
+        qxyzw_rosbody_to_enu = [ q_rosbody_to_enu[1], q_rosbody_to_enu[2], q_rosbody_to_enu[3], q_rosbody_to_enu[0] ]
+        p.resetBasePositionAndOrientation(self.pybullet_body, initial_position_enu, qxyzw_rosbody_to_enu, physicsClientId=self.CLIENT)
+        self.mass_kg = self.get_total_mass(self.pybullet_body)
+
+        #debug lines
+        self.debug_line_thrust = -1
+
+        if self.interactive:
+            print(f'\033[33mpybullet physics active.\033[0m')
+            # print("Mass: %.1f kg" % self.mass_kg)
+
 
     def set_camera_follow_object(self, objectId, distance=4.5, pitch=-55, yaw=50):
-        pos, orn = p.getBasePositionAndOrientation(objectId)
+        pos, orn = p.getBasePositionAndOrientation(objectId, physicsClientId=self.CLIENT)
         p.resetDebugVisualizerCamera(
             cameraDistance=distance,
             cameraYaw=yaw,
             cameraPitch=pitch,
-            cameraTargetPosition=pos
+            cameraTargetPosition=pos, physicsClientId=self.CLIENT
         )
 
     def pybullet_physics(self, u):
@@ -163,11 +162,12 @@ class SimRocketEnv(gym.Env):
             self.thrust_beta      += (self.THRUST_MAX_ANGLE * u[2] - self.thrust_beta)  * self.PYBULLET_DT_SEC / self.THRUST_VECTOR_TAU
 
             thrust = np.array([self.thrust_alpha, self.thrust_beta, 1.0]) * self.thrust_current_N
+            # Shut off engine near the ground:
             if self.pos_n[2] < 2.45:
                 if self.engine_on == True:
                     self.engine_on = False
                     if self.interactive:
-                        print("Engine off")
+                        print("Engine off (altitude: %.3f)" % (self.pos_n[2]))
 
             if self.engine_on == False:
                 thrust *= 0.0
@@ -177,7 +177,7 @@ class SimRocketEnv(gym.Env):
                                  linkIndex=self.pybullet_booster_index,
                                  forceObj=[thrust[0], thrust[1], thrust[2]], # [x forward, y left, z up]
                                  posObj=[0, 0, -NOZZLE_OFFSET],
-                                 flags=p.LINK_FRAME)
+                                 flags=p.LINK_FRAME, physicsClientId=self.CLIENT)
 
             att_x_thrust = u[3] * self.ATT_MAX_THRUST
             att_y_thrust = u[4] * self.ATT_MAX_THRUST
@@ -185,9 +185,9 @@ class SimRocketEnv(gym.Env):
                                  linkIndex=self.pybullet_booster_index,
                                  forceObj=[att_x_thrust, att_y_thrust, 0.0], # [x forward, y left, z up]
                                  posObj=[0, 0, 2.0], # offset from CoM to top
-                                 flags=p.LINK_FRAME)
+                                 flags=p.LINK_FRAME, physicsClientId=self.CLIENT)
 
-            p.stepSimulation()
+            p.stepSimulation(physicsClientId=self.CLIENT)
             self.pybullet_time_sec += self.PYBULLET_DT_SEC
             pybullet_dt_sec += self.PYBULLET_DT_SEC
 
@@ -197,20 +197,21 @@ class SimRocketEnv(gym.Env):
         thrust_color = [1.0, 0, 0]
         thrust_line_width = 6.0
 
-        if self.debug_line_thrust == -1:
-            self.debug_line_thrust = p.addUserDebugLine(thrust_start_point, thrust_end_point, lineColorRGB=thrust_color,
-                                                        parentObjectUniqueId=self.pybullet_body,
-                                                        parentLinkIndex=self.pybullet_booster_index, lineWidth=thrust_line_width)
-        else:
-            self.debug_line_thrust = p.addUserDebugLine(thrust_start_point, thrust_end_point, lineColorRGB=thrust_color,
-                                                        parentObjectUniqueId=self.pybullet_body,
-                                                        parentLinkIndex=self.pybullet_booster_index,
-                                                        replaceItemUniqueId=self.debug_line_thrust, lineWidth=thrust_line_width)
+        if self.interactive:
+            if self.debug_line_thrust == -1:
+                self.debug_line_thrust = p.addUserDebugLine(thrust_start_point, thrust_end_point, lineColorRGB=thrust_color,
+                                                            parentObjectUniqueId=self.pybullet_body,
+                                                            parentLinkIndex=self.pybullet_booster_index, lineWidth=thrust_line_width)
+            else:
+                self.debug_line_thrust = p.addUserDebugLine(thrust_start_point, thrust_end_point, lineColorRGB=thrust_color,
+                                                            parentObjectUniqueId=self.pybullet_body,
+                                                            parentLinkIndex=self.pybullet_booster_index,
+                                                            replaceItemUniqueId=self.debug_line_thrust, lineWidth=thrust_line_width)
 
 
         # <EXTRACT CURRENT STATE FROM PYBULLET>
-        position, orientation = p.getBasePositionAndOrientation(self.pybullet_body)
-        linear_velocity, omega_enu = p.getBaseVelocity(self.pybullet_body)
+        position, orientation = p.getBasePositionAndOrientation(self.pybullet_body, physicsClientId=self.CLIENT)
+        linear_velocity, omega_enu = p.getBaseVelocity(self.pybullet_body, physicsClientId=self.CLIENT)
         self.pos_n = np.array([position[0], position[1], position[2]])
         vel_n_prev = self.vel_n
         self.vel_n = np.array([linear_velocity[0], linear_velocity[1], linear_velocity[2]])
@@ -296,6 +297,10 @@ class SimRocketEnv(gym.Env):
         if self.engine_on == False:
             done = True
 
+        if self.interactive == False:
+            if np.abs(self.pitch_deg) > 30.0 or np.abs(self.roll_deg) > 30.0:
+                done = True
+
         self.time_sec = self.time_sec + self.dt_sec
         self.epochs += 1
         self.update_state()
@@ -321,9 +326,9 @@ class SimRocketEnv(gym.Env):
             # Constants for reward calculation - these may need tuning
             POSITION_WEIGHT = 1.0
             VELOCITY_WEIGHT = 1.0
-            ORIENTATION_WEIGHT = 1.0
-            MAX_POS_REWARD = 100  # Maximum reward for position
-            MAX_VEL_REWARD = 100  # Maximum reward for velocity
+            ORIENTATION_WEIGHT = 1000.0
+            MAX_POS_REWARD = 50   # Maximum reward for position
+            MAX_VEL_REWARD = 50   # Maximum reward for velocity
             MAX_ORI_REWARD = 2    # Maximum reward for orientation (cos(0) + cos(0))
 
             # Calculate the negative distance from the target position (0,0,0)
@@ -351,14 +356,14 @@ class SimRocketEnv(gym.Env):
 
             return total_reward
 
-def get_total_mass(body_id):
-    # Start with the mass of the base link
-    total_mass = p.getDynamicsInfo(body_id, -1)[0]  # -1 refers to the base link
+    def get_total_mass(self, body_id):
+        # Start with the mass of the base link
+        total_mass = p.getDynamicsInfo(body_id, -1, physicsClientId=self.CLIENT)[0]  # -1 refers to the base link
 
-    # Add up the masses of all other links
-    num_links = p.getNumJoints(body_id)
-    for i in range(num_links):
-        total_mass += p.getDynamicsInfo(body_id, i)[0]
+        # Add up the masses of all other links
+        num_links = p.getNumJoints(body_id, physicsClientId=self.CLIENT)
+        for i in range(num_links):
+            total_mass += p.getDynamicsInfo(body_id, i, physicsClientId=self.CLIENT)[0]
 
-    return total_mass
+        return total_mass
 
