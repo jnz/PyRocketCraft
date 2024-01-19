@@ -37,7 +37,8 @@ class SimRocketEnv(gym.Env):
 
         # Action space is set to actuator umin/umax limits
         self.action_space = spaces.Box(low=self.UMIN, high=self.UMAX, shape=(self.ACTUATORCOUNT,))
-        obs_hi = np.ones(state.shape[0]) * 1000.0
+        self.action_space.low[0] = self.THRUST_UMIN
+        obs_hi = np.ones(state.shape[0]) * 2000.0
         self.observation_space = spaces.Box(low=-obs_hi, high=obs_hi, dtype=np.float32)
 
     def pybullet_setup_environment(self):
@@ -293,17 +294,19 @@ class SimRocketEnv(gym.Env):
             print("pybullet exception! ", e)
             done = True
 
+        self.time_sec = self.time_sec + self.dt_sec
+        self.epochs += 1
+        self.update_state()
+
         reward = self.calculate_reward()
         if self.engine_on == False:
             done = True
 
+        # Stop the non-interactive simulation if the attitude is way off
         if self.interactive == False:
             if np.abs(self.pitch_deg) > 30.0 or np.abs(self.roll_deg) > 30.0:
                 done = True
 
-        self.time_sec = self.time_sec + self.dt_sec
-        self.epochs += 1
-        self.update_state()
         return self.state, reward, done, {}
 
     def print_state(self):
