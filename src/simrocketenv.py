@@ -28,6 +28,7 @@ class SimRocketEnv(gym.Env):
         self.ATT_MAX_THRUST = 50.0
         self.GRAVITY = 9.81
         self.mass_kg = -99999999.9 # will be loaded from URDF
+        self.MIN_GROUND_DIST_M = 2.45 # shut off engine below this altitude
 
         self.pybullet_setup_environment()
         # initialize state of the vehicle
@@ -350,9 +351,10 @@ class SimRocketEnv(gym.Env):
 
             # Total reward
             total_reward = normalized_distance_reward + normalized_velocity_reward + normalized_orientation_reward
+            total_reward *= self.dt_sec
 
             # Shut off engine near the ground and give a huge reward bonus for landing upright and with low velocity
-            if self.pos_n[2] < 2.45:
+            if self.pos_n[2] < self.MIN_GROUND_DIST_M:
                 if self.engine_on == True:
                     self.engine_on = False
                     if self.interactive:
