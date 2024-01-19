@@ -163,12 +163,6 @@ class SimRocketEnv(gym.Env):
             self.thrust_beta      += (self.THRUST_MAX_ANGLE * u[2] - self.thrust_beta)  * self.PYBULLET_DT_SEC / self.THRUST_VECTOR_TAU
 
             thrust = np.array([self.thrust_alpha, self.thrust_beta, 1.0]) * self.thrust_current_N
-            # Shut off engine near the ground:
-            if self.pos_n[2] < 2.45:
-                if self.engine_on == True:
-                    self.engine_on = False
-                    if self.interactive:
-                        print("Engine off (altitude: %.3f)" % (self.pos_n[2]))
 
             if self.engine_on == False:
                 thrust *= 0.0
@@ -356,6 +350,15 @@ class SimRocketEnv(gym.Env):
 
             # Total reward
             total_reward = normalized_distance_reward + normalized_velocity_reward + normalized_orientation_reward
+
+            # Shut off engine near the ground and give a huge reward bonus for landing upright and with low velocity
+            if self.pos_n[2] < 2.45:
+                if self.engine_on == True:
+                    self.engine_on = False
+                    if self.interactive:
+                        print("Engine off (altitude: %.3f)" % (self.pos_n[2]))
+                    if velocity_magnitude < 1.0 and np.abs(self.roll_deg) < 5.0 and np.abs(self.pitch_deg) < 5.0:
+                        total_reward += 1000.0
 
             return total_reward
 
