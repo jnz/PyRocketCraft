@@ -64,21 +64,21 @@ class SimRocketEnv(gym.Env):
 
         self.engine_on = True
         # <state>
-        self.pos_n   = np.array([20.0, 20.0, 50.0]) # ENU
-        self.vel_n   = np.array([0.0, 0.0, -10.0]) # ENU
+        self.pos_n   = np.array([np.random.uniform(-50.0, 50.0), np.random.uniform(-50.0, 50.0), np.random.uniform(30.0, 60.0)]) # ENU
+        self.vel_n   = np.array([np.random.uniform(-8.0, 8.0), np.random.uniform(-8.0, 8.0), np.random.uniform(-15.0, 5.0)]) # ENU
 
         # Maintain the attitude as quaternion and Euler angles. The source of truth is
         # the quaternion (self.q) and roll_deg, pitch_deg and yaw_deg will be updated
         # based on the quaternion. But here for initialization the Euler angles are
         # used to initialize the orientation (Euler angles are a bit more readable)
-        self.roll_deg  = 0.0 # Random initialization with e.g. np.random.uniform(-10, 10)
-        self.pitch_deg = 0.0
+        self.roll_deg  = np.random.uniform(-10.0, 10.0) # Random initialization with e.g. np.random.uniform(-10, 10)
+        self.pitch_deg = np.random.uniform(-10.0, 10.0)
         self.yaw_deg   = 0.0
         # Careful: this quaternion is in the order: qw, qx,qy,qz (qw is the real part)
         self.q         = quat_from_rpy(np.deg2rad(self.roll_deg), np.deg2rad(self.pitch_deg), np.deg2rad(self.yaw_deg))
 
-        roll_rate_rps  = 0.0 # np.deg2rad(np.random.uniform(-5, 5))
-        pitch_rate_rps = 0.0 # np.deg2rad(np.random.uniform(-5, 5))
+        roll_rate_rps  = np.deg2rad(np.random.uniform(-10.0, 10.0))
+        pitch_rate_rps = np.deg2rad(np.random.uniform(-10.0, 10.0))
         yaw_rate_rps   = 0.0
         self.omega     = np.array([roll_rate_rps, pitch_rate_rps, yaw_rate_rps]) # vehicle rotation rates
         self.omega_dot = np.array([0.0, 0.0, 0.0])
@@ -327,9 +327,9 @@ class SimRocketEnv(gym.Env):
 
     def calculate_reward(self):
             # Constants for reward calculation - these may need tuning
-            POSITION_WEIGHT = 1.0
+            POSITION_WEIGHT = 10.0
             VELOCITY_WEIGHT = 1.0
-            ORIENTATION_WEIGHT = 1000.0
+            ORIENTATION_WEIGHT = 1.0
             MAX_POS_REWARD = 50   # Maximum reward for position
             MAX_VEL_REWARD = 50   # Maximum reward for velocity
             MAX_ORI_REWARD = 2    # Maximum reward for orientation (cos(0) + cos(0))

@@ -12,7 +12,7 @@ def make_env():
     return _init
 
 def train_and_evaluate():
-    num_envs = 1
+    num_envs = 4
     env = SubprocVecEnv([make_env() for _ in range(num_envs)])
 
     model = PPO(
@@ -31,7 +31,7 @@ def train_and_evaluate():
         device="cuda"
     )
 
-    model.learn(total_timesteps=250000)
+    model.learn(total_timesteps=50000000)
     model_name = 'ppo-rocket-v0'
     model.save(model_name)
 
