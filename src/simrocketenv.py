@@ -299,7 +299,8 @@ class SimRocketEnv(gym.Env):
 
         # Stop the non-interactive simulation if the attitude is way off
         if self.interactive == False:
-            if np.abs(self.pitch_deg) > 30.0 or np.abs(self.roll_deg) > 30.0:
+            if np.abs(self.pitch_deg) > 20.0 or np.abs(self.roll_deg) > 20.0:
+                reward -= 100.0
                 done = True
 
         return self.state, reward, done, {}
@@ -322,7 +323,7 @@ class SimRocketEnv(gym.Env):
 
     def calculate_reward(self):
             # Constants for reward calculation - these may need tuning
-            POSITION_WEIGHT = 10.0
+            POSITION_WEIGHT = 1.0
             VELOCITY_WEIGHT = 1.0
             ORIENTATION_WEIGHT = 1.0
             MAX_POS_REWARD = 50   # Maximum reward for position
@@ -359,7 +360,11 @@ class SimRocketEnv(gym.Env):
                     self.engine_on = False
                     if self.interactive:
                         print("Engine off (altitude: %.3f)" % (self.pos_n[2]))
-                    if velocity_magnitude < 1.0 and np.abs(self.roll_deg) < 5.0 and np.abs(self.pitch_deg) < 5.0:
+                    if np.abs(self.roll_deg) < 5.0:
+                        total_reward += 500.0
+                    if np.abs(self.pitch_deg) < 5.0:
+                        total_reward += 500.0
+                    if velocity_magnitude < 2.0:
                         total_reward += 1000.0
 
             return total_reward

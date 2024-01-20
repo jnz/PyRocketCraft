@@ -31,7 +31,7 @@ def train_and_evaluate():
         device="cuda"
     )
 
-    model.learn(total_timesteps=50000000)
+    model.learn(total_timesteps=90000000)
     model_name = 'ppo-rocket-v0'
     model.save(model_name)
 
