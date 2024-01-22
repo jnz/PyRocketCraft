@@ -12,7 +12,7 @@ def make_env():
     return _init
 
 def train_and_evaluate():
-    num_envs = 4
+    num_envs = 1
     env = SubprocVecEnv([make_env() for _ in range(num_envs)])
 
     model = PPO(
@@ -20,18 +20,18 @@ def train_and_evaluate():
         env=env,
         verbose=1,
         n_steps=2048,
-        learning_rate=5e-4,
+        learning_rate=6e-4,
         batch_size=128,
         n_epochs=10,
         gamma=0.99,
         gae_lambda=0.95,
-        ent_coef=0.02,
+        ent_coef=0.04,
         vf_coef=0.5,
         max_grad_norm=1.0,
         device="cuda"
     )
 
-    model.learn(total_timesteps=90000000)
+    model.learn(total_timesteps=9000000)
     model_name = 'ppo-rocket-v0'
     model.save(model_name)
 

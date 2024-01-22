@@ -299,7 +299,7 @@ class SimRocketEnv(gym.Env):
 
         # Stop the non-interactive simulation if the attitude is way off
         if self.interactive == False:
-            if np.abs(self.pitch_deg) > 20.0 or np.abs(self.roll_deg) > 20.0:
+            if np.abs(self.pitch_deg) > 90.0 or np.abs(self.roll_deg) > 90.0:
                 reward -= 100.0
                 done = True
 
