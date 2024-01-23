@@ -7,6 +7,7 @@ from simrocketenv import SimRocketEnv
 from geodetic_toolbox import *
 import threading
 import copy
+import json # log action <-> obs pairs
 
 from acados_template import AcadosOcp, AcadosOcpSolver
 from mpc.rocket_model import export_rocket_ode_model
@@ -20,6 +21,7 @@ g_thread_msgbox = {
 }
 g_thread_msgbox_lock = threading.Lock() # only access g_thread_msgbox with this lock
 g_sim_running = True # Run application as long as this is set to True
+
 
 # This thread's job is to consume the simulation state vector and emit a
 # control output u (that is again consumed by the physics simulation)
@@ -83,6 +85,18 @@ def nmpc_thread_func(initial_state):
     mpc_step_counter = 0  # +1 for every mpc step, reset every 1 sec
     timestamp_last_mpc_fps_update = time.time()
 
+    # predicted state vectors
+    predictedX = np.ndarray((N_horizon, nx))
+
+    # Add-on:
+    # Keep track of observation and action vectors of the MPC to pre-train a Neural Network
+    expert_data = []
+    try:
+        with open("expert_data.json", "r") as f:
+            expert_data = json.load(f)
+    except Exception as e:
+        print(e)
+
     while g_sim_running:
 
         timestamp_current = time.time()
@@ -101,13 +115,22 @@ def nmpc_thread_func(initial_state):
         # solve OCP and get next control input
         try:
             u = acados_ocp_solver.solve_for_x0(x0_bar=state)
+
+            # predicted state vector
+            for i in range(N_horizon):
+                predictedX[i,:] = acados_ocp_solver.get(i, "x")
         except Exception as e:
             print(e)
+
+        expert_data.append({"obs": state.tolist(), "acts": u.tolist()})
 
         timestamp_last_mpc_update = timestamp_current
         mpc_step_counter += 1
         with g_thread_msgbox_lock:
             g_thread_msgbox['u'] = np.copy(u) # output control vector u
+
+    with open("expert_data.json", "w") as f:
+        json.dump(expert_data, f)
 
 def main():
     global g_thread_msgbox
@@ -126,7 +149,7 @@ def main():
 
     timestamp_lastupdate = time.time()
     MAX_DT_SEC = 0.1 # don't allow larger simulation timesteps than this
-    SIM_DT_SEC = 1.0 / 240.0  # run the simulation every XX ms
+    SIM_DT_SEC = 1.0 / 120.0  # run the simulation every XX ms
     sim_step_counter = 0  # +1 for every simulation step, reset every 1 sec
     # emit a FPS stat message every second based on this timestamp:
     last_fps_update = timestamp_lastupdate
