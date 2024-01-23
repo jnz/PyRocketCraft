@@ -10,6 +10,7 @@ import copy
 import json # log action <-> obs pairs
 
 from mpcpolicy import MPCPolicy
+from nnpolicy import NNPolicy
 
 # Global messagebox to exchange data between threads as shown above
 g_thread_msgbox = {
@@ -27,7 +28,8 @@ def nmpc_thread_func(initial_state):
     global g_thread_msgbox_lock
     global g_sim_running
 
-    policy = MPCPolicy(initial_state)
+    # policy = MPCPolicy(initial_state)
+    policy = NNPolicy(initial_state)
 
     # Add-on:
     # Keep track of observation and action vectors of the MPC to pre-train a Neural Network

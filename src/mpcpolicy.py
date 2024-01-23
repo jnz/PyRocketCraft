@@ -1,5 +1,7 @@
 from basepolicy import BasePolicy
 
+import numpy as np
+import scipy.linalg
 from acados_template import AcadosOcp, AcadosOcpSolver
 from mpc.rocket_model import export_rocket_ode_model
 # from casadi import SX, vertcat, cos, sin, sqrt, sumsqr
@@ -10,7 +12,7 @@ class MPCPolicy(BasePolicy):
 
         self.ocp = AcadosOcp() # create ocp object to formulate the OCP
         self.model = export_rocket_ode_model()
-        self.ocp.model = model
+        self.ocp.model = self.model
         self.Tf = 3.0    # Time horizon in seconds
         self.nx = self.model.x.size()[0]  # state length
         self.nu = self.model.u.size()[0]  # control input u vector length
@@ -37,7 +39,7 @@ class MPCPolicy(BasePolicy):
         setpoint_yref[0] = 1.0  # set q0 (real) unit quaternion part to 1.0
         setpoint_yref[9] = 2.42 # set new setpoint altitude component
         self.ocp.cost.yref = setpoint_yref  # setpoint trajectory
-        self.ocp.cost.yref_e = setpoint_yref[0:nx] # setpoint end
+        self.ocp.cost.yref_e = setpoint_yref[0:self.nx] # setpoint end
 
         # Constraints
         self.ocp.constraints.constr_type = 'BGH' # Comprises simple bounds, polytopic constraints, general non-linear constraints.
@@ -54,7 +56,7 @@ class MPCPolicy(BasePolicy):
         self.ocp.solver_options.qp_solver_cond_N = self.N_horizon
         self.ocp.solver_options.tf = self.Tf
 
-        solver_json = 'acados_ocp_' + model.name + '.json'
+        solver_json = 'acados_ocp_' + self.model.name + '.json'
         self.acados_ocp_solver = AcadosOcpSolver(self.ocp, json_file=solver_json)
 
 
