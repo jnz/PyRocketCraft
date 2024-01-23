@@ -15,7 +15,7 @@ class SimRocketEnv(gym.Env):
 
         self.reset_count = 0 # keep track of calls to reset() function
         self.time_sec = 0.0 # keep track of simulation time
-        self.dt_sec = 1.0 / 60.0 # update rate of the simulation
+        self.dt_sec = 1.0 / 120.0 # update rate of the simulation
         self.urdf_file = "./src/modelrocket.urdf"
         self.UMIN = -1.0
         self.UMAX =  1.0

@@ -1,66 +1,90 @@
-import gym
-from stable_baselines3 import PPO
-from stable_baselines3.common.evaluation import evaluate_policy
-from stable_baselines3.common.vec_env import SubprocVecEnv
-from imitation.algorithms import bc
-from imitation.data import types, rollout
+import json
+import numpy as np
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import TensorDataset, DataLoader
 
 from simrocketenv import SimRocketEnv
 
+class ImitationNetwork(nn.Module):
+    def __init__(self, input_size, output_size):
+        super(ImitationNetwork, self).__init__()
+        self.fc1 = nn.Linear(input_size, 128)  # First MLP layer
+        self.fc2 = nn.Linear(128, 128)         # Second MLP layer
+        self.fc3 = nn.Linear(128, output_size) # Output layer
+
+    def forward(self, x):
+        x = torch.relu(self.fc1(x))
+        x = torch.relu(self.fc2(x))
+        x = self.fc3(x)
+        return x
+
 def train_and_evaluate():
 
-    env = SimRocketEnv(interactive=False)
+    # Load data from JSON
+    with open("expert_data.json", "r") as file:
+        data = json.load(file)
 
-    expert_data = []
-    obs = env.reset()
-    done = False
+    # Assuming each entry in data is a dictionary with 'obs' and 'acts' keys
+    observations = np.array([item['obs'] for item in data])
+    actions = np.array([item['acts'] for item in data])
 
-    while not done:
-        # action = mpc_controller.get_action(obs)
-        expert_data.append({"obs": obs, "acts": action})
-        obs, reward, done, info = env.step(action)
+    # pytorch setup
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"PyTorch: using {device}")
 
-    trajectories = []
-    current_trajectory = []
+    observations = torch.tensor(observations, dtype=torch.float32)
+    actions = torch.tensor(actions, dtype=torch.float32)
+    dataset = TensorDataset(observations, actions)
+    data_loader = DataLoader(dataset, batch_size=64, shuffle=True)
+    input_size = observations.shape[1]
+    output_size = actions.shape[1]
+    model = ImitationNetwork(input_size, output_size).to(device)
+    optimizer = optim.Adam(model.parameters(), lr=0.001)
+    criterion = nn.MSELoss()
 
-    # for each run:
-    for obs, act in expert_data:
-        current_trajectory.append(types.Transition(obs, act, None, None))  # None for reward and next_obs, which are not needed for BC
+    # Training loop
+    num_epochs = 100
+    for epoch in range(num_epochs):
+        model.train()  # Set the model to training mode
+        running_loss = 0.0
 
-    trajectories.append(current_trajectory)
-    current_trajectory = []
+        for inputs, targets in data_loader:
+            # Move data to the GPU
+            inputs, targets = inputs.to(device), targets.to(device)
 
-    # Convert the trajectories to the format required by bc_trainer
-    expert_dataset = rollout.flatten_trajectories(trajectories)
+            # Forward pass
+            outputs = model(inputs)
+            loss = criterion(outputs, targets)
 
-    model = PPO(
-        policy="MlpPolicy",
-        env=env,
-        verbose=1,
-        n_steps=2048,
-        learning_rate=5e-4,
-        batch_size=128,
-        n_epochs=10,
-        gamma=0.99,
-        gae_lambda=0.95,
-        ent_coef=0.02,
-        vf_coef=0.5,
-        max_grad_norm=1.0,
-        device="cuda"
-    )
+            # Backward pass and optimization
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
 
-    # Create a BC trainer and train the model
-    bc_trainer = bc.BC(
-        observation_space=env.observation_space,
-        action_space=env.action_space,
-        policy=model.policy,
-        # demonstrations=expert_dataset,  # FIXME generate expert_dataset
-    )
-    bc_trainer.train(n_epochs=100)
+            running_loss += loss.item()
 
-    model_name = 'expert-rocket-v0'
-    model.save(model_name)
+        # Compute the average loss for this epoch
+        avg_loss = running_loss / len(data_loader)
 
+        print(f"Epoch [{epoch+1}/{num_epochs}], Average Loss: {avg_loss:.4f}")
+
+    torch.save(model, 'torch_nn_mpc-rocket-v0.pth')
+
+    # Inference example:
+
+    # model = torch.load('torch_nn_mpc-rocket-v0.pth')
+    # model.eval()  # Set the model to inference mode
+    # state_vector = ... input state vector
+    # state_tensor = torch.tensor(state_vector, dtype=torch.float32)
+    # state_tensor = state_tensor.unsqueeze(0)  # Not sure if req.: Adding batch dimension
+    # # Run inference
+    # with torch.no_grad():  # Disables gradient calculation, which is not needed during inference
+    #     action_pred, state_pred = model(state_tensor)
+    # # Convert predictions to numpy arrays
+    # action_pred = action_pred.numpy()
+    # state_pred = state_pred.numpy()
 
 if __name__ == '__main__':
     train_and_evaluate()

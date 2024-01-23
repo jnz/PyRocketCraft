@@ -7,7 +7,7 @@ dependencies = [
     "scipy",
     "gym",
     "pybullet",
-    "stable-baselines3[extra]"
+    "stable-baselines3[extra]",
 ]
 
 [tool.setuptools]
