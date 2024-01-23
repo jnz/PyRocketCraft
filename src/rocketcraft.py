@@ -9,9 +9,7 @@ import threading
 import copy
 import json # log action <-> obs pairs
 
-from acados_template import AcadosOcp, AcadosOcpSolver
-from mpc.rocket_model import export_rocket_ode_model
-# from casadi import SX, vertcat, cos, sin, sqrt, sumsqr
+from mpcpolicy import MPCPolicy
 
 # Global messagebox to exchange data between threads as shown above
 g_thread_msgbox = {
@@ -22,7 +20,6 @@ g_thread_msgbox = {
 g_thread_msgbox_lock = threading.Lock() # only access g_thread_msgbox with this lock
 g_sim_running = True # Run application as long as this is set to True
 
-
 # This thread's job is to consume the simulation state vector and emit a
 # control output u (that is again consumed by the physics simulation)
 def nmpc_thread_func(initial_state):
@@ -30,63 +27,7 @@ def nmpc_thread_func(initial_state):
     global g_thread_msgbox_lock
     global g_sim_running
 
-    ocp = AcadosOcp() # create ocp object to formulate the OCP
-    model = export_rocket_ode_model()
-    ocp.model = model
-    Tf = 3.0    # Time horizon in seconds
-    nx = model.x.size()[0]  # state length
-    nu = model.u.size()[0]  # control input u vector length
-    ny = nx + nu
-    ny_e = nx
-    N_horizon = int(20*Tf)  # Epochs for MPC prediction horizon
-    ocp.dims.N = N_horizon
-
-    # set cost module
-    ocp.cost.cost_type = 'LINEAR_LS'
-    ocp.cost.cost_type_e = 'LINEAR_LS'
-    Q_mat = np.diag(model.weight_diag)  # state weight
-    R_mat = np.diag(np.ones(nu, )*100.0)  # weight on control input u
-    ocp.cost.W = scipy.linalg.block_diag(Q_mat, R_mat)
-    ocp.cost.W_e = Q_mat
-    ocp.cost.Vx = np.zeros((ny, nx))
-    ocp.cost.Vx[:nx, :nx] = np.eye(nx)
-    Vu = np.zeros((ny, nu))
-    Vu[nx : nx + nu, 0:nu] = np.eye(nu)
-    ocp.cost.Vu = Vu
-    ocp.cost.Vx_e = np.eye(nx)
-
-    setpoint_yref = np.zeros((ny, ))
-    setpoint_yref[0] = 1.0  # set q0 (real) unit quaternion part to 1.0
-    setpoint_yref[9] = 2.42 # set new setpoint altitude component
-    ocp.cost.yref = setpoint_yref  # setpoint trajectory
-    ocp.cost.yref_e = setpoint_yref[0:nx] # setpoint end
-
-    # Constraints
-    ocp.constraints.constr_type = 'BGH' # Comprises simple bounds, polytopic constraints, general non-linear constraints.
-    ocp.constraints.lbu = np.array([ 0.20, -1.0, -1.0, -1.0, -1.0 ])
-    ocp.constraints.ubu = np.array([ 1.00,  1.0,  1.0,  1.0,  1.0 ])
-    ocp.constraints.x0 = initial_state
-    ocp.constraints.idxbu = np.array(range(nu))
-
-    # Solver options
-    ocp.solver_options.qp_solver = 'PARTIAL_CONDENSING_HPIPM'
-    ocp.solver_options.hessian_approx = 'GAUSS_NEWTON'
-    ocp.solver_options.integrator_type = 'ERK' # IRK, GNSF, ERK
-    ocp.solver_options.nlp_solver_type = 'SQP_RTI'  # SQP or SQP_RTI
-    ocp.solver_options.qp_solver_cond_N = N_horizon
-    ocp.solver_options.tf = Tf
-
-    solver_json = 'acados_ocp_' + model.name + '.json'
-    acados_ocp_solver = AcadosOcpSolver(ocp, json_file=solver_json)
-
-    # # make sure a MPC update is performed in the first epoch
-    MPC_DT_SEC = 1.0 / 100.0  # run the NMPC every XX ms
-    timestamp_last_mpc_update = time.time() - 2*MPC_DT_SEC
-    mpc_step_counter = 0  # +1 for every mpc step, reset every 1 sec
-    timestamp_last_mpc_fps_update = time.time()
-
-    # predicted state vectors
-    predictedX = np.ndarray((N_horizon, nx))
+    policy = MPCPolicy(initial_state)
 
     # Add-on:
     # Keep track of observation and action vectors of the MPC to pre-train a Neural Network
@@ -96,6 +37,12 @@ def nmpc_thread_func(initial_state):
             expert_data = json.load(f)
     except Exception as e:
         print(e)
+
+    # # make sure a MPC update is performed in the first epoch
+    MPC_DT_SEC = 1.0 / 100.0  # run the NMPC every XX ms
+    timestamp_last_mpc_update = time.time() - 2*MPC_DT_SEC
+    mpc_step_counter = 0  # +1 for every mpc step, reset every 1 sec
+    timestamp_last_mpc_fps_update = time.time()
 
     while g_sim_running:
 
@@ -112,15 +59,7 @@ def nmpc_thread_func(initial_state):
                 mpc_step_counter = 0
                 timestamp_last_mpc_fps_update = timestamp_current
 
-        # solve OCP and get next control input
-        try:
-            u = acados_ocp_solver.solve_for_x0(x0_bar=state)
-
-            # predicted state vector
-            for i in range(N_horizon):
-                predictedX[i,:] = acados_ocp_solver.get(i, "x")
-        except Exception as e:
-            print(e)
+        u = policy.predict(state)
 
         expert_data.append({"obs": state.tolist(), "acts": u.tolist()})
 
@@ -136,6 +75,7 @@ def main():
     global g_thread_msgbox
     global g_thread_msgbox_lock
     global g_sim_running
+
 
     # SimRocketEnv is handling the physics simulation
     env = SimRocketEnv(interactive=True)
