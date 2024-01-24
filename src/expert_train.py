@@ -17,6 +17,7 @@ def train_and_evaluate():
     # Assuming each entry in data is a dictionary with 'obs' and 'acts' keys
     observations = np.array([item['obs'] for item in data])
     actions = np.array([item['acts'] for item in data])
+    # predictedX = np.array([item['predictedX'] for item in data])
 
     # pytorch setup
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -58,21 +59,7 @@ def train_and_evaluate():
 
         print(f"Epoch [{epoch+1}/{num_epochs}], Average Loss: {avg_loss:.4f}")
 
-    torch.save(model, 'torch_nn_mpc-rocket-v0.pth')
-
-    # Inference example:
-
-    # model = torch.load('torch_nn_mpc-rocket-v0.pth')
-    # model.eval()  # Set the model to inference mode
-    # state_vector = ... input state vector
-    # state_tensor = torch.tensor(state_vector, dtype=torch.float32)
-    # state_tensor = state_tensor.unsqueeze(0)  # Not sure if req.: Adding batch dimension
-    # # Run inference
-    # with torch.no_grad():  # Disables gradient calculation, which is not needed during inference
-    #     action_pred, state_pred = model(state_tensor)
-    # # Convert predictions to numpy arrays
-    # action_pred = action_pred.numpy()
-    # state_pred = state_pred.numpy()
+    torch.save(model, 'torch_nn_mpc-rocket-v1.pth')
 
 if __name__ == '__main__':
     train_and_evaluate()
