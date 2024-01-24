@@ -59,14 +59,19 @@ class MPCPolicy(BasePolicy):
         solver_json = 'acados_ocp_' + self.model.name + '.json'
         self.acados_ocp_solver = AcadosOcpSolver(self.ocp, json_file=solver_json)
 
+    def get_name(self):
+        return "MPC"
 
     def predict(self, observation):
         # solve OCP and get next control input
         action = self.acados_ocp_solver.solve_for_x0(x0_bar=observation)
 
-        # predicted state vectors
-        # predictedX = np.ndarray((N_horizon, nx))
-        # for i in range(self.N_horizon):
-        #     predictedX[i,:] = self.acados_ocp_solver.get(i, "x")
+        # emit 5 state vectors from the prediction horizon
+        num_pred_epochs = 5
+        step_size = self.N_horizon // num_pred_epochs
 
-        return action
+        predictedX = np.ndarray((num_pred_epochs, self.nx))
+        for i in range(num_pred_epochs):
+            predictedX[i,:] = self.acados_ocp_solver.get(i * step_size, "x")
+
+        return action, predictedX

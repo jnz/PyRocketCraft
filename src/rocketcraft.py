@@ -61,17 +61,20 @@ def nmpc_thread_func(initial_state):
                 mpc_step_counter = 0
                 timestamp_last_mpc_fps_update = timestamp_current
 
-        u = policy.predict(state)
+        u, predictedX = policy.predict(state)
 
-        expert_data.append({"obs": state.tolist(), "acts": u.tolist()})
+        expert_data.append({"obs": state.tolist(), "acts": u.tolist(), "predictedX": predictedX.tolist() })
 
         timestamp_last_mpc_update = timestamp_current
         mpc_step_counter += 1
         with g_thread_msgbox_lock:
             g_thread_msgbox['u'] = np.copy(u) # output control vector u
 
-    with open("expert_data.json", "w") as f:
-        json.dump(expert_data, f)
+    if policy.get_name() == "MPC":
+        print("Dumping data to .json file...", end=" ")
+        with open("expert_data.json", "w") as f:
+            json.dump(expert_data, f, indent=4, sort_keys=True)
+        print("done")
 
 def main():
     global g_thread_msgbox
