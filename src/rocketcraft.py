@@ -32,15 +32,20 @@ def nmpc_thread_func(initial_state):
     # policy = MPCPolicy(initial_state)
     policy = NNPolicy()
     # policy = PPOPolicy()
+    print("Active policy: %s" % (policy.get_name()))
 
     # Add-on:
     # Keep track of observation and action vectors of the MPC to pre-train a Neural Network
+    # Set collect_training_data to True to collect training data in a json file
+    # Call expert_train.py later to process data
+    collect_training_data = False
     expert_data = []
-    try:
-        with open("expert_data.json", "r") as f:
-            expert_data = json.load(f)
-    except Exception as e:
-        print(e)
+    if collect_training_data:
+        try:
+            with open("expert_data.json", "r") as f:
+                expert_data = json.load(f)
+        except Exception as e:
+            print(e)
 
     # # make sure a MPC update is performed in the first epoch
     MPC_DT_SEC = 1.0 / 100.0  # run the NMPC every XX ms
@@ -72,8 +77,8 @@ def nmpc_thread_func(initial_state):
         with g_thread_msgbox_lock:
             g_thread_msgbox['u'] = np.copy(u) # output control vector u
 
-    if policy.get_name() == "MPC":
-        print("Dumping data to .json file...", end=" ")
+    if collect_training_data and policy.get_name() == "MPC":
+        print("Dumping data to .json file...")
         with open("expert_data.json", "w") as f:
             json.dump(expert_data, f, indent=4, sort_keys=True)
         print("done")
