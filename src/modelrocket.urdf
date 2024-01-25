@@ -11,8 +11,11 @@
   <material name="yellow">
     <color rgba="1.0 0.8 0.0 1.0"/>
   </material>
-  <material name="white">
-    <color rgba="1.0 1.0 1.0 1.0"/>
+  <material name="bodycolor">
+    <!--
+       -<color rgba="1.0 1.0 1.0 1.0"/>
+       -->
+    <color rgba="1.0 0.8 0.0 1.0"/>
   </material>
 
   <link name="base_link">
@@ -31,7 +34,7 @@
       <geometry>
         <cylinder radius="0.185" length="4.77"/>
       </geometry>
-      <material name="white"/>
+      <material name="bodycolor"/>
     </visual>
   </link>
 
@@ -101,7 +104,7 @@
       <geometry>
         <cylinder radius="0.13" length="0.3"/>
       </geometry>
-      <material name="white"/>
+      <material name="bodycolor"/>
     </visual>
   </link>
   <joint name="top_hat_joint" type="fixed">
