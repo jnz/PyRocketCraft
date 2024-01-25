@@ -1,13 +1,15 @@
-import gymasium as gym
+import gymnasium as gym
 from stable_baselines3 import PPO
 from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.vec_env import SubprocVecEnv
 
-from simrocketenv import SimRocketEnv
+# from simrocketenv import SimRocketEnv
+from simrocketenv_ext import SimRocketEnv_Ext
 
 def make_env():
     def _init():
-        env = SimRocketEnv(interactive=False)
+        # env = SimRocketEnv(interactive=False)
+        env = SimRocketEnv_Ext(interactive=False)
         return env
     return _init
 
@@ -20,8 +22,8 @@ def train_and_evaluate():
         env=env,
         verbose=1,
         n_steps=2048,
-        learning_rate=6e-4,
-        batch_size=128,
+        learning_rate=3e-5,
+        batch_size=64,
         n_epochs=10,
         gamma=0.99,
         gae_lambda=0.95,
@@ -31,7 +33,7 @@ def train_and_evaluate():
         device="cuda"
     )
 
-    model.learn(total_timesteps=9000000)
+    model.learn(total_timesteps=90000)
     model_name = 'ppo-rocket-v0'
     model.save(model_name)
 

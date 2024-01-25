@@ -1,5 +1,5 @@
 import gymnasium as gym
-from gym import spaces
+from gymnasium import spaces
 import numpy as np
 import random
 from geodetic_toolbox import *
@@ -33,7 +33,7 @@ class SimRocketEnv(gym.Env):
         self.pybullet_setup_environment()
         # initialize state of the vehicle
         # <state>
-        state = self.reset() # reset will add and reset additional basic state variables
+        state, info = self.reset() # reset will add and reset additional basic state variables
         # </state>
 
         # Action space is set to actuator umin/umax limits
@@ -57,7 +57,7 @@ class SimRocketEnv(gym.Env):
 
         self.pybullet_initialized == True
 
-    def reset(self):
+    def reset(self, seed=0, options={}):
         """
         Gym interface. Reset the simulation.
         :return state (state vector)
@@ -98,7 +98,8 @@ class SimRocketEnv(gym.Env):
 
         self.pybullet_reset_environment()
 
-        return self.state
+        info = {}
+        return self.state, info
 
     def pybullet_reset_environment(self):
         self.pybullet_time_sec = self.time_sec
@@ -309,7 +310,8 @@ class SimRocketEnv(gym.Env):
                 reward -= 100.0
                 done = True
 
-        return self.state, reward, done, {}
+        info = {}
+        return self.state, reward, done, False, info
 
     def print_state(self):
 
