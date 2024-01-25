@@ -59,7 +59,7 @@ def train_and_evaluate():
 
         print(f"Epoch [{epoch+1}/{num_epochs}], Average Loss: {avg_loss:.4f}")
 
-    torch.save(model, 'torch_nn_mpc-rocket-v1.pth')
+    torch.save(model, 'torch_nn_mpc-rocket-v2.pth')
 
 if __name__ == '__main__':
     train_and_evaluate()
