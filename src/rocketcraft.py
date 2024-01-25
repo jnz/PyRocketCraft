@@ -7,10 +7,11 @@ from simrocketenv import SimRocketEnv
 from geodetic_toolbox import *
 import threading
 import copy
+import json # log action <-> obs pairs
 
-from acados_template import AcadosOcp, AcadosOcpSolver
-from mpc.rocket_model import export_rocket_ode_model
-# from casadi import SX, vertcat, cos, sin, sqrt, sumsqr
+from mpcpolicy import MPCPolicy
+from nnpolicy import NNPolicy
+from ppopolicy import PPOPolicy
 
 # Global messagebox to exchange data between threads as shown above
 g_thread_msgbox = {
@@ -28,54 +29,23 @@ def nmpc_thread_func(initial_state):
     global g_thread_msgbox_lock
     global g_sim_running
 
-    ocp = AcadosOcp() # create ocp object to formulate the OCP
-    model = export_rocket_ode_model()
-    ocp.model = model
-    Tf = 3.0    # Time horizon in seconds
-    nx = model.x.size()[0]  # state length
-    nu = model.u.size()[0]  # control input u vector length
-    ny = nx + nu
-    ny_e = nx
-    N_horizon = int(20*Tf)  # Epochs for MPC prediction horizon
-    ocp.dims.N = N_horizon
+    # policy = MPCPolicy(initial_state)
+    policy = NNPolicy()
+    # policy = PPOPolicy()
+    print("Active policy: %s" % (policy.get_name()))
 
-    # set cost module
-    ocp.cost.cost_type = 'LINEAR_LS'
-    ocp.cost.cost_type_e = 'LINEAR_LS'
-    Q_mat = np.diag(model.weight_diag)  # state weight
-    R_mat = np.diag(np.ones(nu, )*100.0)  # weight on control input u
-    ocp.cost.W = scipy.linalg.block_diag(Q_mat, R_mat)
-    ocp.cost.W_e = Q_mat
-    ocp.cost.Vx = np.zeros((ny, nx))
-    ocp.cost.Vx[:nx, :nx] = np.eye(nx)
-    Vu = np.zeros((ny, nu))
-    Vu[nx : nx + nu, 0:nu] = np.eye(nu)
-    ocp.cost.Vu = Vu
-    ocp.cost.Vx_e = np.eye(nx)
-
-    setpoint_yref = np.zeros((ny, ))
-    setpoint_yref[0] = 1.0  # set q0 (real) unit quaternion part to 1.0
-    setpoint_yref[9] = 2.42 # set new setpoint altitude component
-    ocp.cost.yref = setpoint_yref  # setpoint trajectory
-    ocp.cost.yref_e = setpoint_yref[0:nx] # setpoint end
-
-    # Constraints
-    ocp.constraints.constr_type = 'BGH' # Comprises simple bounds, polytopic constraints, general non-linear constraints.
-    ocp.constraints.lbu = np.array([ 0.20, -1.0, -1.0, -1.0, -1.0 ])
-    ocp.constraints.ubu = np.array([ 1.00,  1.0,  1.0,  1.0,  1.0 ])
-    ocp.constraints.x0 = initial_state
-    ocp.constraints.idxbu = np.array(range(nu))
-
-    # Solver options
-    ocp.solver_options.qp_solver = 'PARTIAL_CONDENSING_HPIPM'
-    ocp.solver_options.hessian_approx = 'GAUSS_NEWTON'
-    ocp.solver_options.integrator_type = 'ERK' # IRK, GNSF, ERK
-    ocp.solver_options.nlp_solver_type = 'SQP_RTI'  # SQP or SQP_RTI
-    ocp.solver_options.qp_solver_cond_N = N_horizon
-    ocp.solver_options.tf = Tf
-
-    solver_json = 'acados_ocp_' + model.name + '.json'
-    acados_ocp_solver = AcadosOcpSolver(ocp, json_file=solver_json)
+    # Add-on:
+    # Keep track of observation and action vectors of the MPC to pre-train a Neural Network
+    # Set collect_training_data to True to collect training data in a json file
+    # Call expert_train.py later to process data
+    collect_training_data = False
+    expert_data = []
+    if collect_training_data:
+        try:
+            with open("expert_data.json", "r") as f:
+                expert_data = json.load(f)
+        except Exception as e:
+            print(e)
 
     # # make sure a MPC update is performed in the first epoch
     MPC_DT_SEC = 1.0 / 100.0  # run the NMPC every XX ms
@@ -98,24 +68,29 @@ def nmpc_thread_func(initial_state):
                 mpc_step_counter = 0
                 timestamp_last_mpc_fps_update = timestamp_current
 
-        # solve OCP and get next control input
-        try:
-            u = acados_ocp_solver.solve_for_x0(x0_bar=state)
-        except Exception as e:
-            print(e)
+        u, predictedX = policy.next(state)
+
+        expert_data.append({"obs": state.tolist(), "acts": u.tolist(), "predictedX": predictedX.tolist() })
 
         timestamp_last_mpc_update = timestamp_current
         mpc_step_counter += 1
         with g_thread_msgbox_lock:
             g_thread_msgbox['u'] = np.copy(u) # output control vector u
 
+    if collect_training_data and policy.get_name() == "MPC":
+        print("Dumping data to .json file...")
+        with open("expert_data.json", "w") as f:
+            json.dump(expert_data, f, indent=4, sort_keys=True)
+        print("done")
+
 def main():
     global g_thread_msgbox
     global g_thread_msgbox_lock
     global g_sim_running
 
+
     # SimRocketEnv is handling the physics simulation
-    env = SimRocketEnv()
+    env = SimRocketEnv(interactive=True)
     g_thread_msgbox['state'] = env.state
     u = None
     predictedX = None
@@ -126,10 +101,11 @@ def main():
 
     timestamp_lastupdate = time.time()
     MAX_DT_SEC = 0.1 # don't allow larger simulation timesteps than this
-    SIM_DT_SEC = 1.0 / 240.0  # run the simulation every XX ms
+    SIM_DT_SEC = 1.0 / 120.0  # run the simulation every XX ms
     sim_step_counter = 0  # +1 for every simulation step, reset every 1 sec
     # emit a FPS stat message every second based on this timestamp:
     last_fps_update = timestamp_lastupdate
+    reward_sum = 0.0
 
     while g_sim_running:
         timestamp_current = time.time()
@@ -154,8 +130,9 @@ def main():
         dt_sec = np.clip(dt_sec, 0.0, MAX_DT_SEC)
 
         env.dt_sec = dt_sec
-        state, reward, done, _ = env.step(u) # update physics simulation
+        state, reward, done, tr, info = env.step(u) # update physics simulation
         sim_step_counter += 1
+        reward_sum += reward
 
         if done == True:
             g_sim_running = False
@@ -166,7 +143,7 @@ def main():
             render_fps    = g_thread_msgbox['render_fps']
 
         if timestamp_current - last_fps_update >= 0.1:
-            print("FPS=%3i SIM=%4i MPC=%3i" % (render_fps, sim_step_counter, mpc_fps), end=' ')
+            print("FPS=%3i SIM=%4i MPC=%3i score=%i" % (render_fps, sim_step_counter, mpc_fps, reward_sum), end=' ')
             last_fps_update = timestamp_current
 
             sim_step_counter = 0
