@@ -82,9 +82,22 @@ Switch between the policies in rocketcraft.py:
     # policy = MPCPolicy(initial_state)
     policy = NNPolicy()
 
-If MPCPolicy is active you can enable data collection in rocketcraft.py and re-train the network via:
+If MPCPolicy is active you can enable data collection in rocketcraft.py.
+This will write a .json file with state vector and control input (u) pairs
+(observation and action). If this file is sufficiently large (0.5 - 1.0 GB)
+you can re-train the network via:
 
     python3 src/expert_train.py
+
+This will train the network based on the MPC data.
+
+Model Predictive Control
+------------------------
+
+The core "magic" of the model predictive control is located in the
+`src/mpc/rocket_model.py` file. Here the system dynamics are being described.
+The heavy lifting of solving the MPC problem is performed by the awesome acados
+library.
 
 Coordinate Frames
 -----------------

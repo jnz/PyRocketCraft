@@ -14,7 +14,7 @@ def export_rocket_ode_model() -> AcadosModel:
     # moment of inertia
     J_11 = 372.6  # Forward
     J_22 = 372.6  # Left
-    J_33 = 1.55     # Up
+    J_33 = 1.55   # Up
 
     THRUST_MAX_N = 1800.0 # 8500.0
     THRUST_TAU = 2.5
@@ -68,7 +68,7 @@ def export_rocket_ode_model() -> AcadosModel:
     t_alpha_dot = SX.sym('t_alpha_dot')
     t_beta_dot  = SX.sym('t_beta_dot')
 
-    #              0  4      7    10   13
+    # Index        0  4      7    10   13      14       15
     x    = vertcat(q, omega, pos, vel, thrust, t_alpha, t_beta)
     xdot = vertcat(q_dot, omega_dot, pos_dot, vel_dot, thrust_dot, t_alpha_dot, t_beta_dot)
 
@@ -95,7 +95,7 @@ def export_rocket_ode_model() -> AcadosModel:
 
     # System Dynamics
     # ---------------
-    R_b_to_n = SX.sym('R_b_to_n', 3, 3)
+    R_b_to_n = SX.sym('R_b_to_n', 3, 3) # Matrix to transform from body to local coordinate system
     R_b_to_n[0, 0] = 1.0 - 2.0*q_2*q_2 - 2.0*q_3*q_3
     R_b_to_n[0, 1] = 2.0*q_1*q_2 - 2.0*q_3*q_0
     R_b_to_n[0, 2] = 2.0*q_1*q_3 + 2.0*q_2*q_0
@@ -137,6 +137,7 @@ def export_rocket_ode_model() -> AcadosModel:
 
     vel_dot = R_b_to_n@(thrust_body/mass_kg) + gravity_n
 
+    # Core of the MPC magic
     f_expl = vertcat( -(omega_x*q_1)/2.0 - (omega_y*q_2)/2.0 - (omega_z*q_3)/2.0,
                        (omega_x*q_0)/2.0 - (omega_y*q_3)/2.0 + (omega_z*q_2)/2.0,
                        (omega_y*q_0)/2.0 + (omega_x*q_3)/2.0 - (omega_z*q_1)/2.0,
