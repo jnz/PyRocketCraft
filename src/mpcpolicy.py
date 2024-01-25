@@ -1,3 +1,5 @@
+# (c) Jan Zwiener (jan@zwiener.org)
+
 from basecontrol import BaseControl
 
 import numpy as np

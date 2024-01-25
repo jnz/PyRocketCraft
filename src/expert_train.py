@@ -1,3 +1,5 @@
+# (c) Jan Zwiener (jan@zwiener.org)
+
 import json
 import numpy as np
 import torch

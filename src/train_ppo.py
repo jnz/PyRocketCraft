@@ -1,3 +1,5 @@
+# (c) Jan Zwiener (jan@zwiener.org)
+
 import gymnasium as gym
 from stable_baselines3 import PPO
 from stable_baselines3.common.evaluation import evaluate_policy

@@ -1,3 +1,5 @@
+# (c) Jan Zwiener (jan@zwiener.org)
+
 import torch
 import torch.nn as nn
 

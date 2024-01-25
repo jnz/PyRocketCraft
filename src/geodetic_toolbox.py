@@ -1,3 +1,5 @@
+# (c) Jan Zwiener (jan@zwiener.org)
+
 import numpy as np
 
 # Geodetic Toolbox

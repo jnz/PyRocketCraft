@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+# (c) Jan Zwiener (jan@zwiener.org)
+
 import numpy as np
 import scipy.linalg
 import time

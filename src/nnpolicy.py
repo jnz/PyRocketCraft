@@ -1,3 +1,5 @@
+# (c) Jan Zwiener (jan@zwiener.org)
+
 from basecontrol import BaseControl
 from nnpolicynetwork import NNPolicyNetwork
 

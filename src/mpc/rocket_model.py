@@ -1,3 +1,5 @@
+# (c) Jan Zwiener (jan@zwiener.org)
+
 import numpy as np
 from acados_template import AcadosModel
 from casadi import SX, vertcat, sin, cos

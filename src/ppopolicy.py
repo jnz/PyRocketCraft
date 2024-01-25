@@ -1,3 +1,5 @@
+# (c) Jan Zwiener (jan@zwiener.org)
+
 import numpy as np
 from stable_baselines3 import PPO
 
