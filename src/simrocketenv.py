@@ -108,8 +108,14 @@ class SimRocketEnv(gym.Env):
 
         p.setGravity( 0.0, 0.0, -self.GRAVITY, physicsClientId=self.CLIENT)
         p.setTimeStep(self.PYBULLET_DT_SEC, physicsClientId=self.CLIENT)
+
         plane = p.loadURDF("plane.urdf", physicsClientId=self.CLIENT)
         p.changeDynamics(plane, -1, lateralFriction=1, restitution=0.5, physicsClientId=self.CLIENT)
+
+        # terrainShape = p.createCollisionShape(shapeType = p.GEOM_HEIGHTFIELD, meshScale=[0.5,0.5,40.0],fileName = "heightmaps/wm_height_out.png", physicsClientId=self.CLIENT)
+        # textureId = p.loadTexture("heightmaps/gimp_overlay_out.png", physicsClientId=self.CLIENT)
+        # terrain  = p.createMultiBody(0, terrainShape, physicsClientId=self.CLIENT)
+        # p.changeVisualShape(terrain, -1, textureUniqueId = textureId, physicsClientId=self.CLIENT)
 
         initial_position_enu = [self.pos_n[0], self.pos_n[1], self.pos_n[2]]
         self.pybullet_body = p.loadURDF(self.urdf_file, initial_position_enu, physicsClientId=self.CLIENT)
