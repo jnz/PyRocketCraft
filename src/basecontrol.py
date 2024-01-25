@@ -1,10 +1,10 @@
-class BasePolicy:
+class BaseControl:
     def __init__(self):
         pass
 
-    def predict(self, observation):
+    def next(self, observation):
         """
         Should be overridden by all subclasses.
-        Takes an observation, returns the action.
+        Takes an observation, returns the next control input.
         """
         raise NotImplementedError

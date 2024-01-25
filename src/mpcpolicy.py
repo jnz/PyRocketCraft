@@ -1,4 +1,4 @@
-from basepolicy import BasePolicy
+from basecontrol import BaseControl
 
 import numpy as np
 import scipy.linalg
@@ -6,7 +6,7 @@ from acados_template import AcadosOcp, AcadosOcpSolver
 from mpc.rocket_model import export_rocket_ode_model
 # from casadi import SX, vertcat, cos, sin, sqrt, sumsqr
 
-class MPCPolicy(BasePolicy):
+class MPCPolicy(BaseControl):
     def __init__(self, initial_state):
         super().__init__()
 
@@ -62,7 +62,7 @@ class MPCPolicy(BasePolicy):
     def get_name(self):
         return "MPC"
 
-    def predict(self, observation):
+    def next(self, observation):
         # solve OCP and get next control input
         action = self.acados_ocp_solver.solve_for_x0(x0_bar=observation)
 
@@ -75,3 +75,4 @@ class MPCPolicy(BasePolicy):
             predictedX[i,:] = self.acados_ocp_solver.get(i * step_size, "x")
 
         return action, predictedX
+

@@ -1,12 +1,12 @@
-from basepolicy import BasePolicy
+from basecontrol import BaseControl
 from nnpolicynetwork import NNPolicyNetwork
 
 import numpy as np
 import torch
 import torch.nn as nn
 
-class NNPolicy(BasePolicy):
-    def __init__(self, initial_state):
+class NNPolicy(BaseControl):
+    def __init__(self):
         super().__init__()
 
         self.model = torch.load('torch_nn_mpc-rocket-v1.pth').to('cpu')
@@ -15,7 +15,7 @@ class NNPolicy(BasePolicy):
     def get_name(self):
         return "NN"
 
-    def predict(self, observation):
+    def next(self, observation):
 
         state_tensor = torch.tensor(observation, dtype=torch.float32)
         state_tensor = state_tensor.unsqueeze(0)

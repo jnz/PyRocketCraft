@@ -29,7 +29,7 @@ def nmpc_thread_func(initial_state):
     global g_sim_running
 
     # policy = MPCPolicy(initial_state)
-    policy = NNPolicy(initial_state)
+    policy = NNPolicy()
 
     # Add-on:
     # Keep track of observation and action vectors of the MPC to pre-train a Neural Network
@@ -61,7 +61,7 @@ def nmpc_thread_func(initial_state):
                 mpc_step_counter = 0
                 timestamp_last_mpc_fps_update = timestamp_current
 
-        u, predictedX = policy.predict(state)
+        u, predictedX = policy.next(state)
 
         expert_data.append({"obs": state.tolist(), "acts": u.tolist(), "predictedX": predictedX.tolist() })
 

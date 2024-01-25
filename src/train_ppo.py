@@ -1,4 +1,4 @@
-import gym
+import gymasium as gym
 from stable_baselines3 import PPO
 from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.vec_env import SubprocVecEnv
@@ -41,4 +41,3 @@ def train_and_evaluate():
 
 if __name__ == '__main__':
     train_and_evaluate()
-

@@ -1,4 +1,4 @@
-import gym
+import gymnasium as gym
 from gym import spaces
 import numpy as np
 import random
@@ -37,10 +37,10 @@ class SimRocketEnv(gym.Env):
         # </state>
 
         # Action space is set to actuator umin/umax limits
-        self.action_space = spaces.Box(low=self.UMIN, high=self.UMAX, shape=(self.ACTUATORCOUNT,))
-        self.action_space.low[0] = self.THRUST_UMIN
+        self.action_space = spaces.Box(low=np.float32(self.UMIN), high=np.float32(self.UMAX), shape=(self.ACTUATORCOUNT,), dtype=np.float32)
+        self.action_space.low[0] = np.float32(self.THRUST_UMIN)
         obs_hi = np.ones(state.shape[0]) * 2000.0
-        self.observation_space = spaces.Box(low=-obs_hi, high=obs_hi, dtype=np.float32)
+        self.observation_space = spaces.Box(low=-np.float32(obs_hi), high=np.float32(obs_hi), dtype=np.float32)
 
     def pybullet_setup_environment(self):
         # pybullet world frame is ENU EAST (X) NORTH (Y) UP (Z)
