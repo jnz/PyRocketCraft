@@ -3,3 +3,5 @@ __pycache__
 venv_pyrocketcraft
 img/tmp
 *.json
+build/
+pyrocketcraft.egg-info/
