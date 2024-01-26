@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 
 # (c) Jan Zwiener (jan@zwiener.org)
+#
+# Main runtime file to watch the simulation and controller
+# landing the rocket in real-time.
 
 import numpy as np
 import scipy.linalg
@@ -15,17 +18,16 @@ from mpcpolicy import MPCPolicy
 from nnpolicy import NNPolicy
 from ppopolicy import PPOPolicy
 
-# Global messagebox to exchange data between threads as shown above
+# Global messagebox to exchange data between threads
 g_thread_msgbox = {
-    'keymap' : { 'longitudinal_cmd': 0.0, 'lateral_cmd': 0.0, 'yaw_cmd': 0.0, 'vertical_cmd': 0.0, 'yaw_cmd': 0.0, }, # keyboard input
-    'mpc_fps' : 0,                     # debug information: fps of NMPC thread
-    'render_fps' : 0,                  # debug information: fps of render thread
+    'mpc_fps' : 0,              # debug information: fps of NMPC thread
+    # u
 }
 g_thread_msgbox_lock = threading.Lock() # only access g_thread_msgbox with this lock
 g_sim_running = True # Run application as long as this is set to True
 
 # This thread's job is to consume the simulation state vector and emit a
-# control output u (that is again consumed by the physics simulation)
+# control output u (that is consumed by the physics simulation environment)
 def nmpc_thread_func(initial_state):
     global g_thread_msgbox
     global g_thread_msgbox_lock
@@ -63,7 +65,6 @@ def nmpc_thread_func(initial_state):
             continue
 
         with g_thread_msgbox_lock:
-            keymap = copy.deepcopy(g_thread_msgbox['keymap']) # read input from render thread
             state = copy.deepcopy(g_thread_msgbox['state'])
             if timestamp_current - timestamp_last_mpc_fps_update >= 1.0:
                 g_thread_msgbox['mpc_fps'] = mpc_step_counter
@@ -142,19 +143,18 @@ def main():
         with g_thread_msgbox_lock:
             g_thread_msgbox['state'] = state
             mpc_fps       = g_thread_msgbox['mpc_fps']
-            render_fps    = g_thread_msgbox['render_fps']
 
-        if timestamp_current - last_fps_update >= 0.1:
-            print("FPS=%3i SIM=%4i MPC=%3i score=%i" % (render_fps, sim_step_counter, mpc_fps, reward_sum), end=' ')
+        # Print some stats once per second:
+        if timestamp_current - last_fps_update >= 1.0:
+            print("SIM=%4i MPC=%3i score=%i" % (sim_step_counter, mpc_fps, reward_sum), end=' ')
             last_fps_update = timestamp_current
-
             sim_step_counter = 0
-
             env.print_state()
             for elem in u:
                 print("%3.0f" % (elem*99.0), end=' ')
             print("")
 
+    # Main Loop Finished. Cleanup:
     nmpc_thread.join()
 
 if __name__ == '__main__':
