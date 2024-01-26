@@ -1,11 +1,12 @@
 # (c) Jan Zwiener (jan@zwiener.org)
-
-import numpy as np
-
+#
 # Geodetic Toolbox
 # ----------------
 #
-# A collection of helper functions.
+# A collection of math helper functions.
+
+import numpy as np
+
 
 def quat_from_rpy(r, p, y):
     """
@@ -166,3 +167,4 @@ def quat_invert(q):
     """
     qinv = np.array([ q[0], -q[1], -q[2], -q[3] ])
     return qinv
+

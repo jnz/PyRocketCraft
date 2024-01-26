@@ -1,4 +1,8 @@
 # (c) Jan Zwiener (jan@zwiener.org)
+#
+# Neural network architecture to imitate the Model Predictive
+# Control outputs. Used by nnpolicy.py and expert_train.py
+#
 
 import torch
 import torch.nn as nn

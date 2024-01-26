@@ -1,17 +1,21 @@
 # (c) Jan Zwiener (jan@zwiener.org)
+#
+# This is the core rocket simulation with an
+# OpenAI gym interface / gymnasium interface.
+#
+# pybullet world frame is ENU EAST (X) NORTH (Y) UP (Z)
+# pybullet body frame is FORWARD (X) LEFT (Y) UP (Z)
 
 import gymnasium as gym
 from gymnasium import spaces
 import numpy as np
 import random
 from geodetic_toolbox import *
-# pybullet:
 import pybullet as p
 import pybullet_data
 
 class SimRocketEnv(gym.Env):
     def __init__(self, interactive=False):
-        # vehicle config describes the vehicle specific properties:
         self.pybullet_initialized = False
         self.interactive = interactive
 
@@ -19,20 +23,20 @@ class SimRocketEnv(gym.Env):
         self.time_sec = 0.0 # keep track of simulation time
         self.dt_sec = 1.0 / 120.0 # update rate of the simulation
         self.urdf_file = "./src/modelrocket.urdf"
-        self.UMIN = -1.0
-        self.UMAX =  1.0
-        self.ACTUATORCOUNT = 5
-        self.THRUST_UMIN = 0.0
-        self.THRUST_MAX_N = 1500.0
-        self.THRUST_TAU = 2.5
+        self.UMIN = -1.0 # min. control input for thrust vectoring and attitude thruster, main engine has a
+        self.UMAX =  1.0 # max. control input for thrust (= 100%)
+        self.ACTUATORCOUNT = 5 # 1 main thrust, 2 for thrust vector (alpha, beta) of main thrust, 2x attitude correct. thruster
+        self.THRUST_UMIN = 0.0 # min. control input for main thrust
+        self.THRUST_MAX_N = 1500.0 # max. thrust in Newton from main engine
+        self.THRUST_TAU = 2.5 # PT1 first order delay in thrust response
         self.THRUST_VECTOR_TAU = 0.3
         self.THRUST_MAX_ANGLE = np.deg2rad(10.0)
-        self.ATT_MAX_THRUST = 50.0
-        self.GRAVITY = 9.81
-        self.mass_kg = -99999999.9 # will be loaded from URDF
+        self.ATT_MAX_THRUST = 50.0 # attitude thruster: max. thrust in Newton
+        self.GRAVITY = 9.81 # assume we want to land on Earth
+        self.mass_kg = -99999999.9 # will be loaded and updated from URDF
         self.MIN_GROUND_DIST_M = 2.45 # shut off engine below this altitude
 
-        self.pybullet_setup_environment()
+        self.pybullet_setup_environment() # one time setup of pybullet
         # initialize state of the vehicle
         # <state>
         state, info = self.reset() # reset will add and reset additional basic state variables
@@ -45,8 +49,9 @@ class SimRocketEnv(gym.Env):
         self.observation_space = spaces.Box(low=-np.float32(obs_hi), high=np.float32(obs_hi), dtype=np.float32)
 
     def pybullet_setup_environment(self):
-        # pybullet world frame is ENU EAST (X) NORTH (Y) UP (Z)
-        # pybullet body frame is FORWARD (X) LEFT (Y) UP (Z)
+        """
+        Connect to pybullet environment.
+        """
         assert(self.pybullet_initialized == False)
 
         self.PYBULLET_DT_SEC = 1.0/240.0
@@ -86,11 +91,12 @@ class SimRocketEnv(gym.Env):
         self.omega     = np.array([roll_rate_rps, pitch_rate_rps, yaw_rate_rps]) # vehicle rotation rates
         self.omega_dot = np.array([0.0, 0.0, 0.0])
 
+        # initialize with a reasonable thrust of about 70%
         self.thrust_current_N = 0.7 * self.THRUST_MAX_N
-        self.thrust_alpha = 0.0
+        self.thrust_alpha = 0.0 # 0 means no deflection of thrust vectoring
         self.thrust_beta = 0.0
         # </state>
-        self.update_state() # create/update state vector
+        self._update_state() # create/update state vector
 
         # <simulation>
         self.time_sec = 0.0
@@ -99,9 +105,7 @@ class SimRocketEnv(gym.Env):
         # </simulation>
 
         self.pybullet_reset_environment()
-
-        info = {}
-        return self.state, info
+        return self.state, {}
 
     def pybullet_reset_environment(self):
         self.pybullet_time_sec = self.time_sec
@@ -161,7 +165,6 @@ class SimRocketEnv(gym.Env):
         )
 
     def pybullet_physics(self, u):
-
         self.set_camera_follow_object(self.pybullet_body)
         NOZZLE_OFFSET = 2.0 # OFFSET between CoG and nozzle. Dirty hack: should not of course not be hardcoded here
 
@@ -238,9 +241,10 @@ class SimRocketEnv(gym.Env):
             self.omega_dot = (self.omega - omega_prev) / pybullet_dt_sec
         # </EXTRACT CURRENT STATE FROM PYBULLET>
 
-    def update_state(self):
+    def _update_state(self):
         """
-        Internal helper function to update self.state vector based on attributes such as self.q, self.pos, etc.
+        Internal helper function to update self.state vector based on
+        attributes such as self.q, self.pos, etc.
         """
         euler          = quat_to_rpy(self.q)
         self.roll_deg  = np.rad2deg(euler[0])
@@ -300,7 +304,7 @@ class SimRocketEnv(gym.Env):
 
         self.time_sec = self.time_sec + self.dt_sec
         self.epochs += 1
-        self.update_state()
+        self._update_state()
 
         reward = self.calculate_reward()
         if self.engine_on == False:

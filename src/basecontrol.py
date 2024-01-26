@@ -1,3 +1,7 @@
+# (c) Jan Zwiener (jan@zwiener.org)
+#
+# Basic interface for the different control algorithms.
+
 class BaseControl:
     def __init__(self):
         pass

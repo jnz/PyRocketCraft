@@ -1,4 +1,10 @@
 # (c) Jan Zwiener (jan@zwiener.org)
+#
+# Train a neural network to imitate the model predictive control
+# outputs.
+# This requires as input training data in the expert_data.json file.
+# The output is a network file "torch_nn_mpc-rocket-vX.pth"
+# that is used by nnpolicy.py to imitate the MPC.
 
 import json
 import numpy as np
@@ -12,13 +18,14 @@ from nnpolicynetwork import NNPolicyNetwork
 
 def train_and_evaluate():
 
-    # Load data from JSON
+    # Load training data from the MPC controller
     with open("expert_data.json", "r") as file:
         data = json.load(file)
 
     # Assuming each entry in data is a dictionary with 'obs' and 'acts' keys
     observations = np.array([item['obs'] for item in data])
     actions = np.array([item['acts'] for item in data])
+    # Predicted state vectors can also be stored in the JSON file
     # predictedX = np.array([item['predictedX'] for item in data])
 
     # pytorch setup
@@ -42,7 +49,7 @@ def train_and_evaluate():
         running_loss = 0.0
 
         for inputs, targets in data_loader:
-            # Move data to the GPU
+            # Move data to the device (e.g. GPU)
             inputs, targets = inputs.to(device), targets.to(device)
 
             # Forward pass
@@ -61,6 +68,7 @@ def train_and_evaluate():
 
         print(f"Epoch [{epoch+1}/{num_epochs}], Average Loss: {avg_loss:.4f}")
 
+    # Save the trained model to disk
     torch.save(model, 'torch_nn_mpc-rocket-v2.pth')
 
 if __name__ == '__main__':
