@@ -26,7 +26,7 @@ class SimRocketEnv(gym.Env):
         self.UMIN = -1.0 # min. control input for thrust vectoring and attitude thruster, main engine has a
         self.UMAX =  1.0 # max. control input for thrust (= 100%)
         self.ACTUATORCOUNT = 5 # 1 main thrust, 2 for thrust vector (alpha, beta) of main thrust, 2x attitude correct. thruster
-        self.THRUST_UMIN = 0.0 # min. control input for main thrust
+        self.THRUST_UMIN = 0.2 # min. control input for main thrust
         self.THRUST_MAX_N = 1500.0 # max. thrust in Newton from main engine
         self.THRUST_TAU = 2.5 # PT1 first order delay in thrust response
         self.THRUST_VECTOR_TAU = 0.3
