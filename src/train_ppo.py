@@ -1,22 +1,58 @@
 # (c) Jan Zwiener (jan@zwiener.org)
+#
+# Experimental code
+#
+# Use PPO to extend the existing NNPolicy by
+# delta actions to improve the behavior.
+# This will generate a new model saved in "ppo-rocket-vX".
+# This model file is used by the PPOPolicy which
+# is running internally the NNPolicy + the delta
+# on the actions trained here.
 
+import numpy as np
 import gymnasium as gym
 from stable_baselines3 import PPO
 from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.vec_env import SubprocVecEnv
 
-# from simrocketenv import SimRocketEnv
-from simrocketenv_ext import SimRocketEnv_Ext
+from gymnasium import spaces
+from simrocketenv import SimRocketEnv
+from nnpolicy import NNPolicy
 
+# Wrapper for SimRocketEnv so that by default NNPolicy
+# control inputs are added to the simulation.
+# This environment extends simrocketenv.py
+# so that the default neural network control input is
+# always added to the input to this environment.
+# In this way e.g. the PPO training can add delta
+# corrections to the existing controller.
+class SimRocketEnv_Ext(SimRocketEnv):
+    def __init__(self, interactive=False):
+        super().__init__(interactive)
+
+        self.policy = NNPolicy()
+
+        self.DELTAUMIN = -0.5
+        self.DELTAUMAX =  0.5
+        self.action_space = spaces.Box(low=np.float32(self.DELTAUMIN),
+                                       high=np.float32(self.DELTAUMAX),
+                                       shape=(self.ACTUATORCOUNT,),
+                                       dtype=np.float32)
+
+    def step(self, action):
+
+        action0, predictedX = self.policy.next(self.state)
+        return super().step(action + action0)
+
+# Helper function for parallel learning
 def make_env():
     def _init():
-        # env = SimRocketEnv(interactive=False)
         env = SimRocketEnv_Ext(interactive=False)
         return env
     return _init
 
 def train_and_evaluate():
-    num_envs = 1
+    num_envs = 1 # run X environments in parallel
     env = SubprocVecEnv([make_env() for _ in range(num_envs)])
 
     model = PPO(
@@ -36,12 +72,8 @@ def train_and_evaluate():
     )
 
     model.learn(total_timesteps=90000)
-    model_name = 'ppo-rocket-v0'
+    model_name = 'ppo-rocket-v1'
     model.save(model_name)
-
-    # eval_env = SimRocketEnv(interactive=False)
-    # mean_reward, std_reward = evaluate_policy(model, eval_env, n_eval_episodes=10, deterministic=True)
-    # print(f"mean_reward={mean_reward:.2f} +/- {std_reward}")
 
 if __name__ == '__main__':
     train_and_evaluate()
