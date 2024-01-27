@@ -148,10 +148,10 @@ class SimRocketEnv(gym.Env):
         self.epochs = 0
         # </simulation>
 
-        self.pybullet_reset_environment()
+        self._pybullet_reset_environment()
         return self.state, {}
 
-    def pybullet_reset_environment(self):
+    def _pybullet_reset_environment(self):
         """
         Cleanup all pybullet objects, reset and restart simulation environment.
         """
@@ -216,7 +216,7 @@ class SimRocketEnv(gym.Env):
             cameraTargetPosition=pos, physicsClientId=self.CLIENT
         )
 
-    def pybullet_physics(self, u):
+    def _pybullet_physics(self, u):
         """
         Advance the physics simulation until self.pybullet_time_sec catches up
         with self.time_sec.
@@ -371,7 +371,7 @@ class SimRocketEnv(gym.Env):
         done = False
         self.time_sec = self.time_sec + self.dt_sec
         try:
-             self.pybullet_physics(action)
+             self._pybullet_physics(action)
         except Exception as e:
             print("pybullet exception:", e)
             done = True
