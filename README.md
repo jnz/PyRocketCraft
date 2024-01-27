@@ -31,43 +31,56 @@ Program structure
     ├── src/expert_train.py         Re-train the neural network
     ├── src/modelrocket.urdf        Pybullet visualization and physics definition of the rocket
     ├── src/mpc
-    │   └── rocket_model.py         NMPC model definition
+    │   └── rocket_model.py         NMPC model and system dynamics definition
     ├── src/nnpolicy.py             Neural Network Controller
     ├── src/mpcpolicy.py            Model Predictive Control Module
     ├── src/rocketcraft.py          main entry point of application
-    └── src/simrocketenv.py         Physics simulation with gym interface, using pybullet for the heavy lifting
+    └── src/simrocketenv.py         Physics simulation with gym interface, using pybullet
 
 Block diagram:
 --------------
 
 The main function in rocketcraft.py runs the NMPC code decoupled from the
-physics simulation in a thread. The simulation part is in the simrocketenv
-file that is using the OpenAI gym / Gymnasium interface.
+physics simulation in a thread. The simulation part is in the simrocketenv file
+that is using the OpenAI gym / Gymnasium interface and using pybullet in the
+background for the heavy lifting of the physics simulation incl. collision
+detection.
+The `ctrl_thread_func` will either call the MPCPolicy.py OR the NNPolicy.py.
+So either the rocket is controlled by a model predictive control algorithm or
+a neural network.
 
-    ┌────────────────────┐
-    │  rocketcraft.py    │
-    │  --------------    │
-    │                    │
-    │  main()            │
-    │                    │
-    │                    │   'step'  ┌────────────────────┐
-    │                    ├◄─────────►│  simrocketenv.py   │
-    └───────┬────────────┘           │  ---------------   │
-            │           ▲            │                    │
-    'keymap'│           │            │  OpenAI gym interf.│
-    'state' │           │ 'u'        │                    │
-            │           │            └────────────────────┘
-            ▼           │
-    ┌─────────────────────┐
-    │                     │
-    │ NMPC Thread         │
-    │ nmpc_thread_func()  │          ┌────────────────────┐            ┌────────────────────┐
-    │                     │◄────────►│  rocketmodel.py    │◄─────────► │  acados            │
-    │                     │          │  --------------    │            │  ------            │
-    └─────────────────────┘          │                    │            │                    │
-                                     │  NMPC model        │            │  Auto generated    │
-                                     │                    │            │  C-code            │
-                                     └────────────────────┘            └────────────────────┘
+
+    ┌───────────────────┐
+    │  rocketcraft.py   │
+    │  --------------   │
+    │                   │
+    │  main()           │
+    │                   │   'step'  ┌─────────────────────┐
+    │                   ├◄─────────►│  simrocketenv.py    │    ┌─────────────────┐
+    └───────┬───────────┘           │  ---------------    │──► │ pybullet        │
+            │      ▲                │                     │    │ --------        │
+    'keymap'│      │                │  OpenAI gym env.    │    │                 │
+    'state' │      │ 'u'            │  Physics simulation │    │ Physics engine  │
+            │      │                └─────────────────────┘    │ and GUI         │
+            ▼      │                                           └─────────────────┘
+    ┌───────────────────┐
+    │                   │
+    │ Controller Thread │ 'state' >
+    │ ctrl_thread_func()│ < 'u'  ┌─────────────────┐       ┌─────────────────┐
+    │                   │◄───┬──►│ MPCPolicy.py    │◄────► │ rocketmodel.py  │
+    │                   │    │   │ --------------  │       │ --------------  │
+    └───────────────────┘    │   │                 │       │                 │
+                           or│   │ NMPC controller │       │ NMPC model and  │
+                             │   │ u = next(state) │       │ dynamics        │
+                             │   └─────────────────┘       └───┬─────────────┘
+                             │   ┌─────────────────┐           │   ┌────────────────┐
+                             └──►│ NNPolicy.py     │           └─► │ acados         │
+                                 │ --------------  │               │ ------         │
+                                 │                 │               │                │
+                                 │ Neural network  │               │ Auto generated │
+                                 │ u = next(state) │               │ C-code         │
+                                 └─────────────────┘               └────────────────┘
+
 
 Neural Network and Model Predictive Control
 -------------------------------------------
