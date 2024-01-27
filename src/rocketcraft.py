@@ -28,7 +28,7 @@ g_sim_running = True # Run application as long as this is set to True
 
 # This thread's job is to consume the simulation state vector and emit a
 # control output u (that is consumed by the physics simulation environment)
-def nmpc_thread_func(initial_state):
+def ctrl_thread_func(initial_state):
     global g_thread_msgbox
     global g_thread_msgbox_lock
     global g_sim_running
@@ -99,7 +99,7 @@ def main():
     predictedX = None
 
     # Spawn NMPC thread (doing the control work)
-    nmpc_thread = threading.Thread(target=nmpc_thread_func, kwargs={'initial_state': g_thread_msgbox['state']})
+    nmpc_thread = threading.Thread(target=ctrl_thread_func, kwargs={'initial_state': g_thread_msgbox['state']})
     nmpc_thread.start()
 
     timestamp_lastupdate = time.time()
@@ -150,9 +150,7 @@ def main():
             last_fps_update = timestamp_current
             sim_step_counter = 0
             env.print_state()
-            for elem in u:
-                print("%3.0f" % (elem*99.0), end=' ')
-            print("")
+            print("Main thrust: %3.0f%% Thrust Vector alpha: %4.0f%% beta: %4.0f%% ATT_X: %3.0f%% ATT_Y: %3.0f%%" % (u[0]*100.0, u[1]*100.0, u[2]*100.0, u[3]*100.0, u[4]*100.0))
 
     # Main Loop Finished. Cleanup:
     nmpc_thread.join()
