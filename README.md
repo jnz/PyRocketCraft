@@ -2,8 +2,9 @@ PyRocketCraft
 -------------
 
 Control and land a rocket via deep learning or non-linear model predictive
-control (NMPC) in a 3D physics environment (using the pybullet engine and the
-acados MPC library).
+control (NMPC) in a 3D physics environment (using the pybullet engine).  The
+non-linear MPC controller is using the acados library. The neural network parts
+are using pytorch.
 
 ![LOGO](img/pyrocketcraft.png)
 
@@ -52,17 +53,17 @@ a neural network.
 
     ┌───────────────────┐
     │  rocketcraft.py   │
-    │  --------------   │
-    │                   │
-    │  main()           │
-    │                   │   'step'  ┌─────────────────────┐
-    │                   ├◄─────────►│  simrocketenv.py    │    ┌─────────────────┐
-    └───────┬───────────┘           │  ---------------    │──► │ pybullet        │
-            │      ▲                │                     │    │ --------        │
-    'keymap'│      │                │  OpenAI gym env.    │    │                 │
-    'state' │      │ 'u'            │  Physics simulation │    │ Physics engine  │
-            │      │                └─────────────────────┘    │ and GUI         │
-            ▼      │                                           └─────────────────┘
+    │  --------------   │   'state' ┌─────────────────────┐    ┌─────────────────┐
+    │                   │◄──────────│  simrocketenv.py    │    │ pybullet        │
+    │  main()           │           │  ---------------    │──► │ --------        │
+    │                   │   'u'     │                     │    │                 │
+    │                   │──────────►│  OpenAI gym env.    │    │ Physics engine  │
+    └───────┬───────────┘           │  Physics simulation │    │ and GUI         │
+            │      ▲                └─────────────────────┘    └─────────────────┘
+            │      │
+    'state' │      │ 'u'
+            │      │
+            ▼      │
     ┌───────────────────┐
     │                   │
     │ Controller Thread │ 'state' >
@@ -119,13 +120,6 @@ pybullet is using:
 
  - World Frame (enu) East/North/Up(ENU): X = East, Y = North, Z = Up
  - Body Frame (rosbody), X = Forward, Y = Left, Z = Up
-
-OpenGL is using:
-
- - World Frame (gl) X = Right, Y = Up, Z = Pointing out of screen
-
-The OpenGL X axis is aligned with the North axis (X) of the NED frame.
-
 
 Info
 ----
