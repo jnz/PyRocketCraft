@@ -268,7 +268,7 @@ class SimRocketEnv(gym.Env):
         thrust_vec_line = -np.array([self.thrust_alpha,
                                      self.thrust_beta,
                                      1.0]) * vec_line_scale
-        thrust_start_point = [0,0,-self.NOZZLE_OFFSET]
+        thrust_start_point = [0,0, self.NOZZLE_OFFSET]
         thrust_end_point = [thrust_vec_line[0],
                             thrust_vec_line[1],
                             thrust_vec_line[2]-2.0]
