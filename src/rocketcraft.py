@@ -1,9 +1,11 @@
+"""
+Main runtime file to watch the simulation and controller
+landing the rocket in real-time.
+
+(c) Jan Zwiener (jan@zwiener.org)
+"""
 #!/usr/bin/env python3
 
-# (c) Jan Zwiener (jan@zwiener.org)
-#
-# Main runtime file to watch the simulation and controller
-# landing the rocket in real-time.
 
 import numpy as np
 import scipy.linalg
