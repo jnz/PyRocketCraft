@@ -18,18 +18,18 @@ from mpc.rocket_model import export_rocket_ode_model
 # from casadi import SX, vertcat, cos, sin, sqrt, sumsqr
 
 class MPCPolicy(BaseControl):
-    def __init__(self, initial_state):
+    def __init__(self, initial_state, time_horizon=3.0, epochs_per_sec=20):
         super().__init__()
 
         self.ocp        = AcadosOcp() # create ocp object to formulate the OCP
         self.model      = export_rocket_ode_model()
         self.ocp.model  = self.model
-        self.Tf         = 3.0    # Time horizon in seconds
+        self.Tf         = time_horizon # Time horizon in seconds
         self.nx         = self.model.x.size()[0]  # state length
         self.nu         = self.model.u.size()[0]  # control input u vector length
         self.ny         = self.nx + self.nu
         self.ny_e       = self.nx
-        self.N_horizon  = int(20*self.Tf)  # Epochs for MPC prediction horizon
+        self.N_horizon  = int(epochs_per_sec*self.Tf) # prediction horizon
         self.ocp.dims.N = self.N_horizon
 
         # set cost module
