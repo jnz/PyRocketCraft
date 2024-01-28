@@ -18,5 +18,6 @@ class NNPolicyNetwork(nn.Module):
         x = torch.relu(self.fc1(x))
         x = torch.relu(self.fc2(x))
         x = self.fc3(x)
+        # x = torch.tanh(self.fc3(x))  # Apply tanh to the output of the final layer
         return x
 

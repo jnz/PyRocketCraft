@@ -19,19 +19,28 @@ class NNPolicy(BaseControl):
     def __init__(self):
         super().__init__()
 
-        self.model = torch.load('torch_nn_mpc-rocket-v1.pth').to('cpu')
+        input_size = 16
+        output_size = 5
+        self.model = NNPolicyNetwork(input_size, output_size)
+        self.model.load_state_dict(torch.load('torch_nn_mpc-rocket-v2.pth'))
+
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.model = self.model.to(device)
         self.model.eval()  # Set the model to inference mode
 
     def get_name(self):
         return "NN"
 
     def next(self, observation):
-        state_tensor = torch.tensor(observation, dtype=torch.float32)
+        device = next(self.model.parameters()).device
+        state_tensor = torch.tensor(observation, dtype=torch.float32).to(device)
         state_tensor = state_tensor.unsqueeze(0)
-        with torch.no_grad():  # Disables gradient calculation, which is not needed during inference
+
+        with torch.no_grad():  # Disables gradient calculation
             action_pred = self.model(state_tensor)
-        action = action_pred.numpy()
+
+        # If the model is on GPU, move the result back to CPU for numpy conversion
+        action = action_pred.cpu().numpy()
         predictedX = np.ndarray((0, 0))
 
         return action.ravel(), predictedX
-

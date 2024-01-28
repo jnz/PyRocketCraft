@@ -69,7 +69,8 @@ def train_and_evaluate():
         print(f"Epoch [{epoch+1}/{num_epochs}], Average Loss: {avg_loss:.4f}")
 
     # Save the trained model to disk
-    torch.save(model, 'torch_nn_mpc-rocket-v2.pth')
+    model.to('cpu')
+    torch.save(model.state_dict(), 'torch_nn_mpc-rocket-v3.pth')
 
 if __name__ == '__main__':
     train_and_evaluate()
