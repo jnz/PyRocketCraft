@@ -1,10 +1,10 @@
 """
-# Physics simulation module using pybullet
-#
-# pybullet world frame is ENU EAST (X) NORTH (Y) UP (Z)
-# pybullet body frame is FORWARD (X) LEFT (Y) UP (Z)
-#
-# (c) Jan Zwiener (jan@zwiener.org)
+  Physics simulation module using pybullet
+
+  pybullet world frame is ENU EAST (X) NORTH (Y) UP (Z)
+  pybullet body frame is FORWARD (X) LEFT (Y) UP (Z)
+
+  (c) Jan Zwiener (jan@zwiener.org)
 """
 
 import numpy as np
