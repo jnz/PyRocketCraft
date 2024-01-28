@@ -20,7 +20,7 @@ class SimRocketEnv(gym.Env):
     OpenAI gym interface / gymnasium interface. pybullet is
     used for the heavy lifting under the hood.
     """
-    def __init__(self, interactive=False):
+    def __init__(self, interactive=False, scale_obs_space=1.0):
         self.pybullet_initialized = False
         self.interactive = interactive
         self.reset_count = 0 # keep track of calls to reset() function
@@ -52,6 +52,7 @@ class SimRocketEnv(gym.Env):
         # OFFSET between CoG and nozzle. Is there a way to get this from URDF?
         self.NOZZLE_OFFSET = -2.0
         self.ATT_THRUSTER_OFFSET = 2.0
+        self.scale_obs_space = scale_obs_space
         # </vehicle specific>
 
         # <state vector config>
@@ -95,7 +96,7 @@ class SimRocketEnv(gym.Env):
 
         # connect to pybullet and get the client id
         if self.interactive:
-            print("GUI mode")
+            print("\033[33mpybullet physics active.\033[0m")
             self.CLIENT = p.connect(p.GUI)
         else:
             self.CLIENT = p.connect(p.DIRECT)
@@ -103,7 +104,7 @@ class SimRocketEnv(gym.Env):
     def reset(self, seed=0, options={}) -> float:
         """
         Gym interface. Reset the simulation.
-        :return state (state vector)
+        :return state (state vector), info dict.
         """
 
         self.engine_on = True
@@ -113,30 +114,29 @@ class SimRocketEnv(gym.Env):
                                np.random.uniform( 30.0, 60.0)]) # ENU
         self.vel_n = np.array([np.random.uniform( -8.0,  8.0),
                                np.random.uniform( -8.0,  8.0),
-                               np.random.uniform(-15.0,  5.0)]) # ENU
+                               np.random.uniform(-15.0,  5.0)]) * self.scale_obs_space # ENU
 
         # Maintain the attitude as quaternion and Euler angles. The source of truth is
         # the quaternion (self.q) and roll_deg, pitch_deg and yaw_deg will be updated
         # based on the quaternion. But here for initialization the Euler angles are
         # used to initialize the orientation (Euler angles are a bit more readable)
-        self.roll_deg  = np.random.uniform(-10.0, 10.0)
-        self.pitch_deg = np.random.uniform(-10.0, 10.0)
-        self.yaw_deg   = 0.0
+        self.roll_deg  = np.random.uniform(-10.0, 10.0) * self.scale_obs_space
+        self.pitch_deg = np.random.uniform(-10.0, 10.0) * self.scale_obs_space
+        self.yaw_deg   = np.random.uniform(0.0, 360.0)
         # Attitude quaternion (transforming from body to navigation system
         # Careful: quaternion order: qw, qx,qy,qz (qw is the real part)
         self.q         = quat_from_rpy(np.deg2rad(self.roll_deg),
                                        np.deg2rad(self.pitch_deg),
                                        np.deg2rad(self.yaw_deg))
 
-        roll_rate_rps  = np.deg2rad(np.random.uniform(-10.0, 10.0))
-        pitch_rate_rps = np.deg2rad(np.random.uniform(-10.0, 10.0))
+        roll_rate_rps  = np.deg2rad(np.random.uniform(-5.0, 5.0)) * self.scale_obs_space
+        pitch_rate_rps = np.deg2rad(np.random.uniform(-5.0, 5.0)) * self.scale_obs_space
         yaw_rate_rps   = 0.0
         self.omega     = np.array([roll_rate_rps,
                                    pitch_rate_rps,
                                    yaw_rate_rps])
 
-        # initialize with a reasonable thrust of about 70%
-        self.thrust_current_N = 0.7 * self.THRUST_MAX_N
+        self.thrust_current_N = np.random.uniform(0.3, 1.0) * self.THRUST_MAX_N
         self.thrust_alpha = 0.0 # 0 means no deflection of thrust vectoring
         self.thrust_beta = 0.0
         # </state>
@@ -198,10 +198,6 @@ class SimRocketEnv(gym.Env):
         self.mass_kg = self._get_total_mass(self.pybullet_body)
 
         self.debug_line_thrust = -1
-
-        if self.interactive:
-            print("\033[33mpybullet physics active.\033[0m")
-            # print("Mass: %.1f kg" % self.mass_kg)
 
     def _set_camera_follow_object(self, object_id, dist=4.5, pitch=-55, yaw=50):
         """
