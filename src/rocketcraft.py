@@ -9,7 +9,6 @@
 import time
 import threading
 import copy
-import json # log action <-> obs pairs
 import numpy as np
 
 from simrocketenv import SimRocketEnv
@@ -47,19 +46,6 @@ def ctrl_thread_func(initial_state):
 
     print("Active policy: %s" % (policy.get_name()))
 
-    # Add-on:
-    # Keep track of observation and action vectors of the MPC to pre-train a Neural Network
-    # Set collect_training_data to True to collect training data in a json file
-    # Call expert_train.py later to process data
-    collect_training_data = False
-    expert_data = []
-    if collect_training_data:
-        try:
-            with open("expert_data.json", "r") as f:
-                expert_data = json.load(f)
-        except Exception as e:
-            print(e)
-
     # make sure a control algorithm update is performed in the first epoch
     CTRL_DT_SEC = 1.0 / 100.0  # run the control law every XX ms
     timestamp_last_ctrl_update = time.time() - 2*CTRL_DT_SEC
@@ -81,20 +67,10 @@ def ctrl_thread_func(initial_state):
 
         u, predictedX = policy.next(state)
 
-        expert_data.append({ "obs": state.tolist(),
-                             "acts": u.tolist(),
-                             "predictedX": predictedX.tolist() })
-
         timestamp_last_ctrl_update = timestamp_current
         ctrl_fps_counter += 1
         with g_thread_msgbox_lock:
             g_thread_msgbox['u'] = np.copy(u) # emit control vector u
-
-    if collect_training_data and policy.get_name() == "MPC":
-        print("Dumping data to .json file...")
-        with open("expert_data.json", "w") as f:
-            json.dump(expert_data, f, indent=4, sort_keys=True)
-        print("done")
 
 def main():
     """
