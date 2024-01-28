@@ -58,9 +58,6 @@ class SimRocketEnv(gym.Env):
         self.state_cfg = {}
         self.state = np.zeros((16,))
         self.q = np.array([1.0, 0.0, 0.0, 0.0]) # attitude quaternion
-        self.roll_deg= 0.0    # helper: mirror attitude in euler angles
-        self.pitch_deg = 0.0
-        self.yaw_deg = 0.0
         self.omega = np.array([0.0, 0.0, 0.0]) # angular rate (body)
         self.pos_n = np.array([0.0,0.0,0.0]) # East North Up Position (m)
         self.vel_n = np.array([0.0,0.0,0.0]) # East North Up Velocity (m/s)
@@ -68,6 +65,9 @@ class SimRocketEnv(gym.Env):
         self.thrust_alpha = 0.0 # Thrust deflection angle alpha in [rad]
         self.thrust_beta = 0    # Thrust deflection angle beta in [rad]
         # </state vector config>
+        self.roll_deg= 0.0    # helper: mirror attitude in euler angles
+        self.pitch_deg = 0.0
+        self.yaw_deg = 0.0
         # initialize state of the vehicle with the actual values
         state, _ = self.reset() # reset state and fill self.state vector
         # </state>
