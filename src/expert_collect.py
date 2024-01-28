@@ -19,11 +19,11 @@ def expert_collect():
 
     # Settings:
     OUTPUT_FILE = "expert_data.json" # where to write the results
-    MAX_EPISODES = 200 # how many trajectories should be generated?
-    ADD_PREVIOUS_RESULTS = False # overwrite previous training data?
+    MAX_EPISODES = 400 # how many trajectories should be generated?
+    ADD_PREVIOUS_RESULTS = True # overwrite previous training data?
     TIME_HORIZON = 15.0 # MPC prediction horizon
     EPOCHS_PER_SECOND = 20 # MPC epochs per second
-    STATE_SPACE_SCALE = 5.0
+    STATE_SPACE_SCALE = 0.8
 
     # Generate simulation and controller object:
     env = SimRocketEnv(interactive=True, scale_obs_space=STATE_SPACE_SCALE)

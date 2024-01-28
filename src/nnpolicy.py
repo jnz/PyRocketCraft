@@ -16,13 +16,13 @@ import torch
 import torch.nn as nn
 
 class NNPolicy(BaseControl):
-    def __init__(self):
+    def __init__(self, network_file="torch_nn_mpc-rocket-v2.pth"):
         super().__init__()
 
         input_size = 16
         output_size = 5
         self.model = NNPolicyNetwork(input_size, output_size)
-        self.model.load_state_dict(torch.load('torch_nn_mpc-rocket-v2.pth'))
+        self.model.load_state_dict(torch.load(network_file))
 
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model = self.model.to(device)
