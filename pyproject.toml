@@ -7,6 +7,7 @@ dependencies = [
     "scipy>=1.5.2",
     "gym~=0.29.0",
     "pybullet==3.2.6",
+    "torch>=2.1.2",
     "stable-baselines3[extra]==2.2.1",
 ]
 
