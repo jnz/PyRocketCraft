@@ -122,7 +122,7 @@ class SimRocketEnv(gym.Env):
         # used to initialize the orientation (Euler angles are a bit more readable)
         self.roll_deg  = np.random.uniform(-10.0, 10.0) * self.scale_obs_space
         self.pitch_deg = np.random.uniform(-10.0, 10.0) * self.scale_obs_space
-        self.yaw_deg   = np.random.uniform(0.0, 360.0)
+        self.yaw_deg   = 0.0
         # Attitude quaternion (transforming from body to navigation system
         # Careful: quaternion order: qw, qx,qy,qz (qw is the real part)
         self.q         = quat_from_rpy(np.deg2rad(self.roll_deg),
@@ -136,7 +136,7 @@ class SimRocketEnv(gym.Env):
                                    pitch_rate_rps,
                                    yaw_rate_rps])
 
-        self.thrust_current_N = np.random.uniform(0.3, 1.0) * self.THRUST_MAX_N
+        self.thrust_current_N = np.random.uniform(0.65, 0.75) * self.THRUST_MAX_N
         self.thrust_alpha = 0.0 # 0 means no deflection of thrust vectoring
         self.thrust_beta = 0.0
         # </state>
