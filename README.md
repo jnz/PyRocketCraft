@@ -89,8 +89,8 @@ Neural Network and Model Predictive Control
 
 Different control policies are available:
 
-    - NNPolicy
-    - MPCPolicy
+ - NNPolicy
+ - MPCPolicy
 
 Switch between the policies in rocketcraft.py:
 
