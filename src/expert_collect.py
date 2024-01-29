@@ -45,12 +45,14 @@ def expert_collect():
     total_epochs = 0 # keep track of epochs rendered so far
     last_fps_update = 0 # timestamp of last status update on stdout
     last_reward_sum = 0
+    rng_seed = 0
 
     # training loop
     for episode in range(MAX_EPISODES):
         done = False
         reward_sum = 0
-        state, _ = env.reset() # start new trajectory
+        state, _ = env.reset(seed=rng_seed) # start new trajectory
+        rng_seed += 1
 
         while not done:
             # Generate control input:
