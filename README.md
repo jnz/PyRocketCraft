@@ -26,10 +26,11 @@ Program structure
 
     .
     ├── env.sh                      Setting up the env if coming back
-    ├── torch_nn_mpc-rocket-v1.pth  Trained network to imitate NMPC
+    ├── torch_nn_mpc-rocket-vX.pth  Trained network to imitate NMPC
     ├── setup                       Setting up the project for first use
+    ├── src/expert_collect.py       Generate data for training
+    ├── src/expert_train.py         Train the neural network
     ├── src/geodetic_toolbox.py     Helper functions
-    ├── src/expert_train.py         Re-train the neural network
     ├── src/modelrocket.urdf        Pybullet visualization and physics definition of the rocket
     ├── src/mpc
     │   └── rocket_model.py         NMPC model and system dynamics definition
@@ -96,14 +97,17 @@ Switch between the policies in rocketcraft.py:
     # policy = MPCPolicy(initial_state)
     policy = NNPolicy()
 
-If MPCPolicy is active you can enable data collection in rocketcraft.py.
-This will write a .json file with state vector and control input (u) pairs
-(observation and action). If this file is sufficiently large (0.5 - 1.0 GB)
-you can re-train the network via:
+Run:
+
+    python3 src/expert_collect.py
+
+This will write a `expert_data.json` file with training data (state vector, control input
+(u) pairs, etc.). Then a new policy can be trained with this data:
 
     python3 src/expert_train.py
 
-This will train the network based on the MPC data.
+This will train a neural network based on the MPC data and generate a
+`torch_nn_mpc-rocket-vX.pth` file that can be used by the NNPolicy class.
 
 Model Predictive Control
 ------------------------
