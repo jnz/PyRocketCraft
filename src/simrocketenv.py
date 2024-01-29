@@ -21,6 +21,7 @@ class SimRocketEnv(gym.Env):
     used for the heavy lifting under the hood.
     """
     def __init__(self, interactive=False, scale_obs_space=1.0):
+        print("PyRocketCraft")
         self.pybullet_initialized = False
         self.interactive = interactive
         self.reset_count = 0 # keep track of calls to reset() function
@@ -459,11 +460,13 @@ class SimRocketEnv(gym.Env):
                 if self.interactive:
                     print("Engine off at altitude: %.3f (AGL)" % (self.pos_n[2]))
                 if np.abs(self.roll_deg) < 5.0:
-                    total_reward += 500.0
+                    total_reward += 128.0
                 if np.abs(self.pitch_deg) < 5.0:
-                    total_reward += 500.0
+                    total_reward += 256.0
+                if np.linalg.norm(self.omega) < np.deg2rad(7.0):
+                    total_reward += 512.0
                 if velocity_magnitude < 2.0:
-                    total_reward += 1000.0
+                    total_reward += 1024.0
 
         return total_reward
 
