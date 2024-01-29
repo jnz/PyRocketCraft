@@ -19,19 +19,43 @@ class NNPolicy(BaseControl):
     def __init__(self, network_file="torch_nn_mpc-rocket-v2.pth"):
         super().__init__()
 
+        print("pytorch version: ", end="")
+        print(torch.__version__)
+
         input_size = 16
         output_size = 5
         self.model = NNPolicyNetwork(input_size, output_size)
         self.model.load_state_dict(torch.load(network_file))
 
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        # Default to CPU for inference, as the model is quite small
+
+        # if torch.cuda.is_available():
+        #     device = torch.device("cuda")
+        #     print("pytorch running inference on gpu")
+        #     print("    cuda device: %s" % (torch.cuda.get_device_name()))
+        #     print("    number of cuda devices: %i" % (torch.cuda.device_count()))
+        # elif torch.backends.mps.is_available():
+        #     device = torch.device("mps")
+        #     print("pytorch running inference on Apple silicon")
+        # else:
+        #     device = torch.device("cpu")
+        #     print("pytorch running inference on cpu")
+        device = torch.device("cpu")
+        print("pytorch running inference on cpu")
+
         self.model = self.model.to(device)
         self.model.eval()  # Set the model to inference mode
+
 
     def get_name(self):
         return "NN"
 
     def next(self, observation):
+        """
+            Get a control input (u) / action vector for
+            a supplied state vector (observation).
+        """
+
         device = next(self.model.parameters()).device
         state_tensor = torch.tensor(observation, dtype=torch.float32).to(device)
         state_tensor = state_tensor.unsqueeze(0)
@@ -39,7 +63,8 @@ class NNPolicy(BaseControl):
         with torch.no_grad():  # Disables gradient calculation
             action_pred = self.model(state_tensor)
 
-        # If the model is on GPU, move the result back to CPU for numpy conversion
+        # If the model is on GPU, move the result back to CPU for numpy
+        # conversion
         action = action_pred.cpu().numpy()
         predictedX = np.ndarray((0, 0))
 
