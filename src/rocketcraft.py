@@ -129,21 +129,23 @@ def main():
         sim_step_counter += 1
         reward_sum += reward
 
-        if done is True:
-            g_sim_running = False
-
         with g_thread_msgbox_lock:
             g_thread_msgbox['state'] = state
             ctrl_fps = g_thread_msgbox['ctrl_fps']
 
         # Print some stats once per second:
-        if timestamp_current - last_fps_update >= 1.0:
+        if timestamp_current - last_fps_update >= 1.0 or not g_sim_running:
             print("SIM=%4i MPC=%3i score=%i" % (sim_step_counter,
                                                 ctrl_fps, reward_sum), end=' ')
             last_fps_update = timestamp_current
             sim_step_counter = 0
             env.print_state()
             print("Main thrust: %3.0f%% Thrust Vector alpha: %4.0f%% beta: %4.0f%% ATT_X: %3.0f%% ATT_Y: %3.0f%%" % (u[0]*100.0, u[1]*100.0, u[2]*100.0, u[3]*100.0, u[4]*100.0))
+
+        # Terminate episode?
+        if done is True:
+            g_sim_running = False
+            print("Total reward of episode: %i" % reward_sum)
 
     # Main Loop Finished. Wait for control thread to finish.
     nmpc_thread.join()
