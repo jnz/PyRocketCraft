@@ -28,7 +28,7 @@ def train_and_evaluate():
     print("pytorch version: ", end="")
     print(torch.__version__)
 
-    INPUT_FILE = "expert_data_previous.json"
+    INPUT_FILE = "expert_data.json"
     OUTPUT_FILE = "torch_nn_mpc-rocket-v3.pth"
     BATCH_SIZE = 32
     LEARNING_RATE = 0.0005
