@@ -93,6 +93,7 @@ def train_and_evaluate():
     print("Input vector size: %i" % input_size)
     print("Output vector size: %i" % output_size)
     print("Epochs: %i" % EPOCHS)
+    print(model)
 
     current_time = datetime.now().strftime('%Y%m%d-%H%M%S')
     log_dir = f"runs/run_{current_time}_lr_{LEARNING_RATE}_bs_{BATCH_SIZE}"
