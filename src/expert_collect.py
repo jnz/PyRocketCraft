@@ -10,6 +10,7 @@ import json # log action <-> obs pairs
 
 from simrocketenv import SimRocketEnv
 from mpcpolicy import MPCPolicy
+from nnpolicy import augment_state # transform state before saving
 
 def expert_collect():
     """
@@ -19,14 +20,14 @@ def expert_collect():
 
     # Settings:
     OUTPUT_FILE = "expert_data.json" # where to write the results
-    MAX_EPISODES = 400 # how many trajectories should be generated?
+    MAX_EPISODES = 200 # how many trajectories should be generated?
     ADD_PREVIOUS_RESULTS = True # overwrite previous training data?
-    TIME_HORIZON = 15.0 # MPC prediction horizon
+    TIME_HORIZON = 3.0 # MPC prediction horizon
     EPOCHS_PER_SECOND = 20 # MPC epochs per second
-    STATE_SPACE_SCALE = 0.8
+    STATE_SPACE_SCALE = 3.0
 
     # Generate simulation and controller object:
-    env = SimRocketEnv(interactive=True, scale_obs_space=STATE_SPACE_SCALE)
+    env = SimRocketEnv(interactive=False, scale_obs_space=STATE_SPACE_SCALE)
     policy = MPCPolicy(env.state,
                        time_horizon=TIME_HORIZON,
                        epochs_per_sec=EPOCHS_PER_SECOND)
@@ -57,6 +58,7 @@ def expert_collect():
         while not done:
             # Generate control input:
             u, predictedX = policy.next(state)
+            augmented_state = augment_state(state) # copy of state
 
             # Simulation step:
             state, reward, done, _, _ = env.step(u) # update physics simulation
@@ -65,7 +67,7 @@ def expert_collect():
                 last_reward_sum = reward_sum
 
             # Save results
-            expert_data.append({ "obs": state.tolist(),
+            expert_data.append({ "obs": augmented_state.tolist(),
                                  "acts": u.tolist(),
                                  "predictedX": predictedX.tolist() })
 

@@ -25,13 +25,13 @@ def expert_collect():
     """
 
     # Settings:
-    MAX_EPISODES = 10 # how many trajectories should be generated?
-    STATE_SPACE_SCALE = 0.1
+    MAX_EPISODES = 40 # how many trajectories should be generated?
+    STATE_SPACE_SCALE = 1.0
 
     # Generate simulation and controller object:
     env = SimRocketEnv(interactive=False, scale_obs_space=STATE_SPACE_SCALE)
     mpcpolicy = MPCPolicy(env.state)
-    nnpolicy = NNPolicy()
+    nnpolicy = NNPolicy(network_file="torch_nn_mpc-rocket-v3.pth")
     rng_seed = 0
 
     # training loop
