@@ -34,10 +34,10 @@ def train_and_evaluate():
     INPUT_FILE = "expert_data.json"
     OUTPUT_FILE = "torch_nn_mpc-rocket-v3.pth"
     BATCH_SIZE = 64
-    LEARNING_RATE = 0.0008
+    LEARNING_RATE = 0.0005
     EPOCHS = 100
-    SEED = 15
-    VAL_PERCENTAGE = 0.08
+    SEED = 16
+    VAL_PERCENTAGE = 0.05
     WEIGHT_DECAY = 0.01
 
     print("Loading training data from file: %s" % INPUT_FILE)
@@ -97,6 +97,7 @@ def train_and_evaluate():
     print("Input vector size: %i" % input_size)
     print("Output vector size: %i" % output_size)
     print("Epochs: %i" % EPOCHS)
+    print("Weight decay: %.4f" % WEIGHT_DECAY)
     print(model)
     unknowns = count_parameters(model)
     print("Model parameters to estimate: %i" % (unknowns))
@@ -104,7 +105,7 @@ def train_and_evaluate():
     print("Ratio unknowns / observations: %.2f" % (unknowns/len(data)))
 
     current_time = datetime.now().strftime('%Y%m%d-%H%M%S')
-    log_dir = f"runs/run_{current_time}_lr_{LEARNING_RATE}_bs_{BATCH_SIZE}"
+    log_dir = f"runs/run_{current_time}_lr_{LEARNING_RATE}_bs_{BATCH_SIZE}_wd_{WEIGHT_DECAY}"
     writer = SummaryWriter(log_dir=log_dir) # TensorBoard / torchvision output
 
     tic = time.time()
