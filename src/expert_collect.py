@@ -59,17 +59,16 @@ def expert_collect():
             # Generate control input:
             u, predictedX = policy.next(state)
             augmented_state = augment_state(state) # copy of state
+            # Save results
+            expert_data.append({ "obs": augmented_state.tolist(),
+                                 "acts": u.tolist(),
+                                 "predictedX": predictedX.tolist() })
 
             # Simulation step:
             state, reward, done, _, _ = env.step(u) # update physics simulation
             reward_sum += reward
             if done:
                 last_reward_sum = reward_sum
-
-            # Save results
-            expert_data.append({ "obs": augmented_state.tolist(),
-                                 "acts": u.tolist(),
-                                 "predictedX": predictedX.tolist() })
 
             timestamp_current = time.time()
             epoch_fps_counter += 1
