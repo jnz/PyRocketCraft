@@ -32,3 +32,10 @@ kill -SIGINT $FFMPEG_PID
 
 # Wait a bit to ensure ffmpeg has time to finish writing the video file
 wait $FFMPEG_PID
+
+
+# Crop:
+# ffmpeg -i output_ai.mp4 -filter:v "crop=500:500:250:20" output_ai_crop.mp4
+# Add text
+# ffmpeg -i output_mpc_crop.mp4 -vf "drawtext=text='MPC':x=20:y=20:fontsize=48:fontcolor=white:shadowcolor=black:shadowx=2:shadowy=2" output_mpc_crop_text.mp4
+# ffmpeg -i output_mpc_crop_text.mp4 -i output_ai_crop_text.mp4 -filter_complex "[0:v][1:v]hstack=inputs=2[v]" -map "[v]" output_mpc_ai.mp4

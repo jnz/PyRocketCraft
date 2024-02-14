@@ -14,7 +14,7 @@ Run the program with
 (source env.sh; ./src/rocketcraft.py)
 ```
 
-![MOVIE](img/rocketlanding.gif)
+![MOVIE](img/compare.gif)
 
 Installation on Linux and macOS
 -------------------------------
