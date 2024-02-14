@@ -27,6 +27,7 @@ class SimRocketEnv(gym.Env):
         self.reset_count = 0 # keep track of calls to reset() function
         self.time_sec = 0.0 # keep track of simulation time
         self.dt_sec = 1.0 / 120.0 # update rate of the simulation
+        self.WAIT_ON_GROUND_SEC = 3.0 # wait for X sec. after engine shutdown
 
         # <pybullet>
         self.debug_line_thrust = -1
@@ -148,6 +149,7 @@ class SimRocketEnv(gym.Env):
         self.time_sec = 0.0
         self.reset_count += 1
         self.epochs = 0
+        self.time_on_ground_sec = 0.0 # wait a few seconds after engine shutdown
         # </simulation>
 
         self._pybullet_reset_environment()
@@ -379,7 +381,9 @@ class SimRocketEnv(gym.Env):
 
         reward = self._calculate_reward()
         if self.engine_on is False:
-            done = True
+            self.time_on_ground_sec += self.dt_sec
+            if self.time_on_ground_sec > self.WAIT_ON_GROUND_SEC:
+                done = True
 
         # Stop the non-interactive simulation if the attitude is way off
         if self.interactive is False:
