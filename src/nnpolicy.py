@@ -18,49 +18,45 @@ from geodetic_toolbox import quat_to_matrix, quat_invert
 
 def augment_state(state):
     """
-        Helper function to transform coordinates from
-        the navigation frame to the body frame.
-        The intuition is that the network does not have
-        to learn this coordinate transformation and
-        acts in its own reference frame, which is more
-        natural.
+        Helper function to prepare the state vector for
+        the neural network.
 
         input: state vector
-        output: state vector with position and velocity
-                in body frame
+        output: augumented state vector
     """
 
     augmented_state = state.copy()
 
     # state has body to nav. transformation
-    q_nav_to_body = quat_invert(augmented_state[0:4])
-    R = quat_to_matrix(q_nav_to_body)
+    # q_nav_to_body = quat_invert(augmented_state[0:4])
+    # R = quat_to_matrix(q_nav_to_body)
 
     # delta to setpoint
-    reference_pos = np.array([0.0, 0.0, 0.0])
+    # reference_pos = np.array([0.0, 0.0, 0.0])
 
-    pos_n = augmented_state[7:10]
-    vel_n = augmented_state[10:13]
+    # pos_n = augmented_state[7:10]
+    # vel_n = augmented_state[10:13]
     # FIXME: state config is hardcoded here
     # also the setpoint / reference position is hardcoded here
     # Getting from simrocketenv state_cfg would work,
     # but is a bit of heavy lifting. maybe just add a
     # test case?
 
-    pos_b = R@(reference_pos - pos_n)
-    vel_b = R@vel_n
+    # pos_b = R@(reference_pos - pos_n)
+    # vel_b = R@vel_n
 
-    augmented_state[7:10] = pos_b
-    augmented_state[10:13] = vel_b
-    augmented_state[10:13] = vel_b
-    augmented_state[13] = 0.0
-    augmented_state[14] = 0.0
-    augmented_state[15] = 0.0
+    # augmented_state[7:10] = pos_b
+    # augmented_state[10:13] = vel_b
+    # augmented_state[10:13] = vel_b
+
+    # augmented_state[13] = 0.0
+    # augmented_state[14] = 0.0
+    # augmented_state[15] = 0.0
 
     return augmented_state
 
 class NNPolicy(BaseControl):
-    def __init__(self, network_file="torch_nn_mpc-rocket-v3.pth"):
+    def __init__(self, network_file="torch_nn_mpc-rocket-v2.pth"):
         super().__init__()
 
         print("pytorch version: ", end="")
