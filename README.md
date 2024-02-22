@@ -128,4 +128,4 @@ pybullet is using:
 Info
 ----
 
-2023-2024 Jan Zwiener. Free to use for academic research. Contact author for commercial use.
+2023-2024 Jan Zwiener. Free to use for academic research if this work is cited and linked. Contact author for commercial use.
