@@ -6,6 +6,8 @@ control (NMPC) in a 3D physics environment (using the pybullet engine).  The
 non-linear MPC controller is using the acados library. The neural network parts
 are using pytorch.
 
+Mail: jan@zwiener.org
+
 ![LOGO](img/pyrocketcraft.png)
 
 Run the program with
@@ -128,4 +130,4 @@ pybullet is using:
 Info
 ----
 
-2023-2024 Jan Zwiener. Free to use for academic research. Contact author for commercial use.
+2023-2024 Jan Zwiener. Free to use for academic research if this work is cited and linked. Contact author for commercial use.
