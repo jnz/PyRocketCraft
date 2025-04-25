@@ -169,3 +169,9 @@ def quat_invert(q):
     """
     qinv = np.array([ q[0], -q[1], -q[2], -q[3] ])
     return qinv
+
+def angle_diff(a, b):
+    """Returns the signed difference between angles a and b in radians, wrapped to [-π, π]."""
+    d = a - b
+    return (d + np.pi) % (2 * np.pi) - np.pi
+
